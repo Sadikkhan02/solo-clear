@@ -13,6 +13,7 @@ const STORAGE_KEY = "solo_system_data";
 export const DEFAULT_SYSTEM_DATA = {
   level: 0,
   exp: 0,
+  statPoints: 0,
   stats: {
     str: 0,
     vit: 0,
@@ -27,6 +28,7 @@ export const DEFAULT_SYSTEM_DATA = {
   streak: 0,
   lastWorkoutDate: null,
   lastActiveDate: null,
+  huntClaimedToday: false, // Prevents same-day hunt spam exploit
 };
 
 /**
@@ -38,9 +40,12 @@ export function useSystemData() {
   const [penaltyInfo, setPenaltyInfo] = useState(null);
 
   /**
-   * Evaluates mobile inactivity penalty and daily quest reset.
-   * - If inactivity >= 2 days: floor EXP by 50% (never below 0), reset streak to 0.
-   * - If new day (>= 1 day): reset daily progress quests.
+   * Evaluates mobile inactivity penalty and daily quest auto-reset.
+   * On every mount / initialization:
+   * 1. Check lastWorkoutDate. If it's a new calendar day (today > lastWorkoutDate, i.e. daysElapsed >= 1),
+   *    force reset dailyProgress to all false and reset huntClaimedToday so quests are fresh.
+   * 2. If day difference >= 2, apply penalty (floor EXP by 50%, streak = 0, exp never < 0).
+   * 3. If day difference === 1, dailyProgress is reset for today's workout and streak continuity is maintained.
    *
    * @param {typeof DEFAULT_SYSTEM_DATA} currentData
    * @returns {{ updatedData: typeof DEFAULT_SYSTEM_DATA, penalty: object | null }}
@@ -55,26 +60,7 @@ export function useSystemData() {
     if (referenceDate) {
       const daysElapsed = getDaysDifference(referenceDate, today);
 
-      // Inactivity penalty triggered after 2 or more missed days
-      if (daysElapsed >= 2) {
-        const originalExp = updated.exp || 0;
-        const reducedExp = Math.max(0, Math.floor(originalExp * 0.5));
-        const lostExp = originalExp - reducedExp;
-
-        updated.exp = reducedExp;
-        updated.streak = 0;
-
-        penalty = {
-          applied: true,
-          daysMissed: daysElapsed,
-          lostExp,
-          previousExp: originalExp,
-          newExp: reducedExp,
-          date: today,
-        };
-      }
-
-      // Reset daily quests on any new calendar day (>= 1 day)
+      // Rule 1: Auto-reset dailyProgress and unlock hunt on any new calendar day (daysElapsed >= 1)
       if (daysElapsed >= 1) {
         updated.dailyProgress = {
           pushups: false,
@@ -82,10 +68,34 @@ export function useSystemData() {
           crunches: false,
           running: false,
         };
+        updated.huntClaimedToday = false; // Reset the claim lock for today's fresh hunt
+
+        // Rule 2: Inactivity penalty triggered after 2 or more missed days
+        if (daysElapsed >= 2) {
+          const originalExp = updated.exp || 0;
+          const reducedExp = Math.max(0, Math.floor(originalExp * 0.5));
+          const lostExp = originalExp - reducedExp;
+
+          updated.exp = reducedExp;
+          updated.streak = 0;
+
+          penalty = {
+            applied: true,
+            daysMissed: daysElapsed,
+            lostExp,
+            previousExp: originalExp,
+            newExp: reducedExp,
+            date: today,
+          };
+        }
+        // Rule 3: If difference is exactly 1, streak is maintained / prepared for next increment
       }
     }
 
+    // Ensure exp is never negative
+    updated.exp = Math.max(0, updated.exp || 0);
     updated.lastActiveDate = today;
+
     return { updatedData: updated, penalty };
   }, []);
 
@@ -100,6 +110,8 @@ export function useSystemData() {
         parsed = {
           ...DEFAULT_SYSTEM_DATA,
           ...item,
+          statPoints: item.statPoints !== undefined ? item.statPoints : DEFAULT_SYSTEM_DATA.statPoints,
+          huntClaimedToday: item.huntClaimedToday !== undefined ? item.huntClaimedToday : DEFAULT_SYSTEM_DATA.huntClaimedToday,
           stats: { ...DEFAULT_SYSTEM_DATA.stats, ...(item.stats || {}) },
           dailyProgress: {
             ...DEFAULT_SYSTEM_DATA.dailyProgress,
@@ -108,7 +120,7 @@ export function useSystemData() {
         };
       }
 
-      // Run mobile penalty check & daily reset
+      // Run mobile penalty check & daily auto-reset
       const { updatedData, penalty } = checkMobilePenalty(parsed);
 
       setData(updatedData);
@@ -146,57 +158,22 @@ export function useSystemData() {
   const requiredExp = useMemo(() => getRequiredExp(data.level), [data.level]);
 
   /**
-   * Action: Complete or toggle a daily quest exercise
+   * Action: Allocate a stat point (STR, VIT, AGI)
    */
-  const completeExercise = useCallback(
-    (exerciseKey) => {
+  const allocateStat = useCallback(
+    (statKey) => {
+      if (!["str", "vit", "agi"].includes(statKey)) return;
       updateData((prev) => {
-        const currentTier = getTier(prev.level);
-        const wasCompleted = !!prev.dailyProgress[exerciseKey];
-        const nextStatus = !wasCompleted;
-
-        const nextDailyProgress = {
-          ...prev.dailyProgress,
-          [exerciseKey]: nextStatus,
-        };
-
-        // EXP delta
-        const expDelta = nextStatus
-          ? currentTier.expReward
-          : -currentTier.expReward;
-
-        let newExp = Math.max(0, (prev.exp || 0) + expDelta);
-        let newLevel = prev.level || 0;
-
-        // Level up loop
-        while (newExp >= getRequiredExp(newLevel)) {
-          newExp -= getRequiredExp(newLevel);
-          newLevel += 1;
-        }
-
-        // Check if all daily exercises are now complete
-        const allCompleted = Object.values(nextDailyProgress).every(Boolean);
-        const previouslyAllCompleted = Object.values(prev.dailyProgress).every(
-          Boolean
-        );
-
-        let newStreak = prev.streak || 0;
-        if (allCompleted && !previouslyAllCompleted) {
-          newStreak += 1;
-        } else if (!allCompleted && previouslyAllCompleted) {
-          newStreak = Math.max(0, newStreak - 1);
-        }
-
-        const today = getTodayDateString();
+        const currentPoints = prev.statPoints || 0;
+        if (currentPoints <= 0) return prev;
 
         return {
           ...prev,
-          level: newLevel,
-          exp: newExp,
-          dailyProgress: nextDailyProgress,
-          streak: newStreak,
-          lastWorkoutDate: allCompleted ? today : prev.lastWorkoutDate,
-          lastActiveDate: today,
+          statPoints: currentPoints - 1,
+          stats: {
+            ...prev.stats,
+            [statKey]: (prev.stats[statKey] || 0) + 1,
+          },
         };
       });
     },
@@ -204,18 +181,24 @@ export function useSystemData() {
   );
 
   /**
-   * Action: Allocate a stat point (STR, VIT, AGI)
+   * Action: Decrease a stat point (STR, VIT, AGI)
    */
-  const allocateStat = useCallback(
+  const decreaseStat = useCallback(
     (statKey) => {
       if (!["str", "vit", "agi"].includes(statKey)) return;
-      updateData((prev) => ({
-        ...prev,
-        stats: {
-          ...prev.stats,
-          [statKey]: (prev.stats[statKey] || 0) + 1,
-        },
-      }));
+      updateData((prev) => {
+        const currentVal = prev.stats?.[statKey] || 0;
+        if (currentVal <= 0) return prev;
+
+        return {
+          ...prev,
+          statPoints: (prev.statPoints || 0) + 1,
+          stats: {
+            ...prev.stats,
+            [statKey]: currentVal - 1,
+          },
+        };
+      });
     },
     [updateData]
   );
@@ -234,12 +217,11 @@ export function useSystemData() {
   }, []);
 
   /**
-   * Testing Utility: Simulate days jumping forward to test penalty logic
+   * Testing Utility: Simulate days jumping forward
    */
   const simulateDateJump = useCallback(
     (daysToAdd = 2) => {
       updateData((prev) => {
-        // Set lastWorkoutDate / lastActiveDate into the past
         const pastDate = new Date();
         pastDate.setDate(pastDate.getDate() - daysToAdd);
         const pastDateStr = getTodayDateString(pastDate);
@@ -253,6 +235,8 @@ export function useSystemData() {
         const { updatedData, penalty } = checkMobilePenalty(simulatedState);
         if (penalty) {
           setPenaltyInfo(penalty);
+        } else {
+          setPenaltyInfo(null);
         }
         return updatedData;
       });
@@ -267,8 +251,8 @@ export function useSystemData() {
     requiredExp,
     penaltyInfo,
     isLoaded,
-    completeExercise,
     allocateStat,
+    decreaseStat,
     resetData,
     simulateDateJump,
     checkMobilePenalty,
