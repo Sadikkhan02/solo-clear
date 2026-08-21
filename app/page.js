@@ -177,7 +177,12 @@ export default function HomePage() {
   const nextDelta = Math.max(0, Math.round((requiredExp - data.exp) * 10) / 10);
 
   return (
-    <div className="w-full flex-1 flex flex-col justify-between select-none space-y-4">
+    <motion.div
+      initial={{ opacity: 0, x: 20 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ duration: 0.28, ease: "easeOut" }}
+      className="w-full flex-1 flex flex-col justify-between select-none space-y-4"
+    >
       {/* Penalty Notice Banner (if triggered) */}
       <AnimatePresence>
         {penaltyInfo && penaltyInfo.applied && (
@@ -415,6 +420,6 @@ export default function HomePage() {
         newLevel={levelUpData.newLevel}
         statPointsEarned={levelUpData.statPointsEarned}
       />
-    </div>
+    </motion.div>
   );
 }

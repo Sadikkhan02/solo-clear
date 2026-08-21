@@ -1,16 +1,26 @@
 import "./globals.css";
 
-export const metadata = {
-  title: "Solo Clear | System Interface",
-  description: "Mobile-first environment with custom neumorphic atmosphere and atmospheric lighting.",
-};
-
 export const viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
   themeColor: "#0a0a0f",
+};
+
+export const metadata = {
+  title: "Solo Clear | System Quest",
+  description: "Mobile-first Solo Leveling fitness system.",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "SoloClear",
+  },
+  icons: {
+    icon: "/icon-192x192.png",
+    apple: "/icon-192x192.png",
+  },
 };
 
 export default function RootLayout({ children }) {

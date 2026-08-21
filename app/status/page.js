@@ -69,7 +69,12 @@ export default function StatusPage() {
   const availablePoints = data.statPoints || 0;
 
   return (
-    <div className="w-full flex-1 flex flex-col justify-between select-none space-y-4 py-1">
+    <motion.div
+      initial={{ opacity: 0, x: 20 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ duration: 0.28, ease: "easeOut" }}
+      className="w-full flex-1 flex flex-col justify-between select-none space-y-4 py-1"
+    >
       {/* Top Header: Back navigation & Available Points */}
       <header className="flex items-center justify-between pb-3 border-b border-white/5">
         <Link
@@ -200,6 +205,6 @@ export default function StatusPage() {
           Return to Daily Quest
         </Link>
       </footer>
-    </div>
+    </motion.div>
   );
 }
