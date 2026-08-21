@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -15,35 +16,57 @@ import {
   ShieldAlert,
   Calendar,
   Lock,
+  LogOut,
+  RefreshCw,
 } from "lucide-react";
-import { useSystemData } from "@/hooks/useSystemData";
+import { signOut } from "next-auth/react";
+import { useAuth } from "@/context/AuthContext";
+import { useHunterData } from "@/hooks/useHunterData";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { NeumorphicButton } from "@/components/ui/NeumorphicButton";
 import { ExpBar } from "@/components/ui/ExpBar";
 import { LevelUpModal } from "@/components/ui/LevelUpModal";
-import { getRequiredExp, getTodayDateString, getDaysDifference } from "@/lib/helpers";
 
 export default function HomePage() {
+  const router = useRouter();
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
   const {
     data,
     tier,
     requiredExp,
     penaltyInfo,
+    isLoading: hunterLoading,
     isLoaded,
-    updateData,
-    simulateDateJump,
-    resetData,
-  } = useSystemData();
+    error,
+    refreshHunter,
+    retry,
+    toggleQuest,
+    completeHunt,
+    updateHunterProgress,
+  } = useHunterData();
 
   const [showLevelUp, setShowLevelUp] = useState(false);
-  const [levelUpData, setLevelUpData] = useState({ oldLevel: 0, newLevel: 0, statPointsEarned: 3 });
+  const [levelUpData, setLevelUpData] = useState({
+    oldLevel: 0,
+    newLevel: 0,
+    statPointsEarned: 3,
+  });
   const [huntFeedback, setHuntFeedback] = useState(null);
   const [showDevTools, setShowDevTools] = useState(false);
+  const [isClaiming, setIsClaiming] = useState(false);
 
-  if (!isLoaded) {
+  // --- REDIRECT UNAUTHENTICATED USERS ---
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      router.push("/login");
+    }
+  }, [authLoading, isAuthenticated, router]);
+
+  // --- LOADING STATE ---
+  if (authLoading || (hunterLoading && !data?.email)) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center space-y-3 select-none">
-        <div className="w-8 h-8 rounded-full border-2 border-accent-cyan border-t-transparent animate-spin" />
+      <div className="flex-1 flex flex-col items-center justify-center min-h-[80vh] space-y-3 select-none">
+        <div className="w-10 h-10 rounded-full border-2 border-accent-cyan border-t-transparent animate-spin" />
         <p className="text-xs font-mono text-gray-400 tracking-widest uppercase">
           INITIALIZING SYSTEM...
         </p>
@@ -51,14 +74,36 @@ export default function HomePage() {
     );
   }
 
+  // --- UNAUTHENTICATED GUARD ---
+  if (!isAuthenticated) {
+    return null;
+  }
+
+  // --- ERROR STATE ---
+  if (error && !data) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center min-h-[80vh] space-y-4 select-none px-4">
+        <GlassCard className="text-center space-y-4 w-full">
+          <div className="text-4xl">⚠️</div>
+          <h3 className="text-lg font-bold text-white font-mono">CONNECTION LOST</h3>
+          <p className="text-xs text-gray-400 leading-relaxed">{error}</p>
+          <NeumorphicButton onClick={retry} className="w-full justify-center text-sm">
+            <RefreshCw className="w-4 h-4 mr-2" />
+            Reconnect to System
+          </NeumorphicButton>
+        </GlassCard>
+      </div>
+    );
+  }
+
   // Calculate completed daily quests count
   const completedCount = Object.values(data.dailyProgress || {}).filter(Boolean).length;
-  const expPerQuest = tier.expReward / 4;
+  const expPerQuest = tier ? tier.expReward / 4 : 2.5;
 
   /**
    * Toggle a specific quest in dailyProgress immediately
    */
-  const handleToggleQuest = (exerciseKey) => {
+  const handleToggleQuest = async (exerciseKey) => {
     if (data.huntClaimedToday) {
       setHuntFeedback({
         type: "warning",
@@ -68,24 +113,21 @@ export default function HomePage() {
       return;
     }
 
-    updateData((prev) => ({
-      ...prev,
-      dailyProgress: {
-        ...prev.dailyProgress,
-        [exerciseKey]: !prev.dailyProgress?.[exerciseKey],
-      },
-    }));
+    try {
+      await toggleQuest(exerciseKey);
+    } catch (err) {
+      setHuntFeedback({
+        type: "warning",
+        text: "Failed to update quest. Reconnecting...",
+      });
+      setTimeout(() => setHuntFeedback(null), 3000);
+    }
   };
 
   /**
-   * Complete Hunt action:
-   * - Guard 1: Anti-Spam (huntClaimedToday lock)
-   * - Guard 2: Minimum 1 exercise required
-   * - Multi-level loop calculation with +3 stat points per level
-   * - Streak continuity handling
-   * - Locks huntClaimedToday: true until next day
+   * Complete Hunt action (Authoritative Server-side loop)
    */
-  const handleCompleteHunt = () => {
+  const handleCompleteHunt = async () => {
     // --- GUARD 1: Prevent spam on the same day ---
     if (data.huntClaimedToday) {
       setHuntFeedback({
@@ -106,82 +148,46 @@ export default function HomePage() {
       return;
     }
 
-    const gainedExp = Math.round(expPerQuest * completedCount * 10) / 10;
-    const currentLevel = data.level || 0;
-    let newExp = Math.max(0, (data.exp || 0) + gainedExp);
-    let newLevel = currentLevel;
-    let newStatPoints = data.statPoints || 0;
-    let levelsGained = 0;
+    setIsClaiming(true);
+    const oldLevel = data.level || 0;
 
-    // --- Level-up loop ---
-    let required = getRequiredExp(newLevel);
-    while (newExp >= required) {
-      newExp -= required;
-      newLevel += 1;
-      newStatPoints += 3;
-      levelsGained += 1;
-      required = getRequiredExp(newLevel);
-    }
+    try {
+      const result = await completeHunt();
 
-    // --- Streak Logic ---
-    const today = getTodayDateString();
-    let newStreak = data.streak || 0;
-
-    if (data.lastWorkoutDate) {
-      const daysElapsed = getDaysDifference(data.lastWorkoutDate, today);
-      if (daysElapsed === 1) {
-        newStreak = (data.streak || 0) + 1; // Worked out yesterday
-      } else if (daysElapsed === 0) {
-        newStreak = Math.max(1, data.streak || 1); // Same day
-      } else {
-        newStreak = 1; // Brand new start or after penalty
+      if (result?.levelUp) {
+        setLevelUpData({
+          oldLevel: oldLevel,
+          newLevel: result.hunter.level,
+          statPointsEarned: (result.hunter.level - oldLevel) * 3,
+        });
+        setShowLevelUp(true);
+      } else if (result?.earnedExp) {
+        setHuntFeedback({
+          type: "success",
+          text: `+${result.earnedExp} EXP Added! Hunt Completed for Today.`,
+        });
+        setTimeout(() => setHuntFeedback(null), 3500);
       }
-    } else {
-      newStreak = 1;
-    }
-
-    // --- Update final state with huntClaimedToday lock ---
-    updateData((prev) => ({
-      ...prev,
-      level: newLevel,
-      exp: Math.round(newExp * 10) / 10,
-      statPoints: newStatPoints,
-      streak: newStreak,
-      lastWorkoutDate: today,
-      lastActiveDate: today,
-      huntClaimedToday: true, // <-- CRITICAL: Lock the hunt for today
-      dailyProgress: {
-        pushups: false,
-        squats: false,
-        crunches: false,
-        running: false,
-      },
-    }));
-
-    if (levelsGained > 0) {
-      setLevelUpData({
-        oldLevel: currentLevel,
-        newLevel: newLevel,
-        statPointsEarned: levelsGained * 3,
-      });
-      setShowLevelUp(true);
-    } else {
+    } catch (err) {
       setHuntFeedback({
-        type: "success",
-        text: `+${gainedExp} EXP Added! Hunt Completed for Today.`,
+        type: "warning",
+        text: err.message || "Failed to complete hunt.",
       });
-      setTimeout(() => setHuntFeedback(null), 3500);
+      setTimeout(() => setHuntFeedback(null), 4000);
+    } finally {
+      setIsClaiming(false);
     }
   };
 
-  const nextDelta = Math.max(0, Math.round((requiredExp - data.exp) * 10) / 10);
+  const nextDelta = Math.max(0, Math.round((requiredExp - (data.exp || 0)) * 10) / 10);
 
   return (
     <motion.div
       initial={{ opacity: 0, x: 20 }}
       animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: -20 }}
       transition={{ duration: 0.28, ease: "easeOut" }}
-      className="w-full flex-1 flex flex-col justify-between select-none space-y-4"
+      className="w-full flex-1 flex flex-col justify-between select-none space-y-4 pb-4"
     >
       {/* Penalty Notice Banner (if triggered) */}
       <AnimatePresence>
@@ -217,36 +223,36 @@ export default function HomePage() {
               <div className="flex items-center justify-between text-[11px]">
                 <span className="font-mono text-accent-cyan uppercase font-bold flex items-center gap-1.5">
                   <Clock className="w-3.5 h-3.5" />
-                  System Day Simulator
+                  System Simulator & Session
                 </span>
-                <span className="text-[10px] text-dark-muted font-mono">
-                  Claimed: {data.huntClaimedToday ? "Yes (Locked)" : "No (Open)"}
+                <span className="text-[10px] text-dark-muted font-mono truncate max-w-[120px]">
+                  {data.email}
                 </span>
               </div>
               <div className="grid grid-cols-3 gap-2">
                 <motion.button
                   whileTap={{ scale: 0.95 }}
-                  onClick={() => simulateDateJump(1)}
+                  onClick={() => refreshHunter()}
+                  className="py-2 px-1.5 rounded-xl bg-dark-bg text-accent-cyan text-[11px] font-mono border border-accent-cyan/20 shadow-neu-raised hover:border-accent-cyan/50 flex items-center justify-center gap-1 active:shadow-neu-pressed text-center"
+                >
+                  <RefreshCw className="w-3 h-3" />
+                  Refresh
+                </motion.button>
+                <motion.button
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => updateHunterProgress({ huntClaimedToday: false, dailyProgress: { pushups: false, squats: false, crunches: false, running: false } })}
                   className="py-2 px-1.5 rounded-xl bg-dark-bg text-emerald-400 text-[11px] font-mono border border-emerald-500/20 shadow-neu-raised hover:border-emerald-400/50 flex items-center justify-center gap-1 active:shadow-neu-pressed text-center"
                 >
-                  <Calendar className="w-3 h-3" />
-                  +1d (Reset)
+                  <RotateCcw className="w-3 h-3" />
+                  Reset Quests
                 </motion.button>
                 <motion.button
                   whileTap={{ scale: 0.95 }}
-                  onClick={() => simulateDateJump(2)}
+                  onClick={() => signOut({ callbackUrl: "/login" })}
                   className="py-2 px-1.5 rounded-xl bg-dark-bg text-rose-400 text-[11px] font-mono border border-rose-500/20 shadow-neu-raised hover:border-rose-400/50 flex items-center justify-center gap-1 active:shadow-neu-pressed text-center"
                 >
-                  <ShieldAlert className="w-3 h-3" />
-                  +2d (Penalty)
-                </motion.button>
-                <motion.button
-                  whileTap={{ scale: 0.95 }}
-                  onClick={resetData}
-                  className="py-2 px-1.5 rounded-xl bg-dark-bg text-gray-300 text-[11px] font-mono border border-white/5 shadow-neu-raised hover:text-white flex items-center justify-center gap-1 active:shadow-neu-pressed text-center"
-                >
-                  <RotateCcw className="w-3 h-3" />
-                  Reset
+                  <LogOut className="w-3 h-3" />
+                  Sign Out
                 </motion.button>
               </div>
             </GlassCard>
@@ -263,16 +269,16 @@ export default function HomePage() {
             <div className="space-y-1">
               <div className="flex items-center space-x-2">
                 <span
-                  className={`text-[11px] font-mono font-bold px-2 py-0.5 rounded-md border ${tier.badgeClass}`}
+                  className={`text-[11px] font-mono font-bold px-2 py-0.5 rounded-md border ${tier?.badgeClass || "bg-gray-800 text-gray-300 border-gray-700"}`}
                 >
-                  Rank: {tier.rankLetter}
+                  Rank: {tier?.rankLetter || "E"}
                 </span>
                 <span className="text-xs text-gray-400 font-medium tracking-wide">
-                  {tier.title}
+                  {tier?.title || "Novice Awakened"}
                 </span>
               </div>
               <h1 className="text-2xl font-black text-white tracking-tight flex items-center gap-1.5">
-                Level {data.level}
+                Level {data.level || 0}
                 <Sparkles className="w-4 h-4 text-accent-cyan" />
               </h1>
             </div>
@@ -282,7 +288,7 @@ export default function HomePage() {
               <button
                 onClick={() => setShowDevTools(!showDevTools)}
                 className="p-2 rounded-xl bg-dark-bg/80 shadow-neu-raised hover:text-accent-cyan text-dark-muted border border-white/5 transition-all active:shadow-neu-pressed"
-                title="System Date & Penalty Simulator"
+                title="System Tools & Logout"
                 aria-label="Toggle Simulator"
               >
                 <Clock className="w-3.5 h-3.5" />
@@ -290,13 +296,16 @@ export default function HomePage() {
 
               <Link
                 href="/status"
-                className="p-2 rounded-xl bg-dark-bg/80 shadow-neu-raised hover:text-accent-cyan text-gray-300 border border-white/5 transition-all active:shadow-neu-pressed"
+                className="p-2 rounded-xl bg-dark-bg/80 shadow-neu-raised hover:text-accent-cyan text-gray-300 border border-white/5 transition-all active:shadow-neu-pressed relative"
                 title="View Hunter Status & Stats"
               >
                 <Sliders className="w-3.5 h-3.5 text-accent-cyan" />
+                {(data.statPoints || 0) > 0 && (
+                  <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-accent-cyan animate-pulse" />
+                )}
               </Link>
 
-              {data.streak > 0 && (
+              {(data.streak || 0) > 0 && (
                 <div className="flex items-center space-x-1 px-2 py-1 rounded-xl bg-dark-bg/80 shadow-neu-pressed border border-white/5 text-[11px] font-mono text-amber-400">
                   <Flame className="w-3.5 h-3.5 fill-amber-400" />
                   <span>{data.streak}d</span>
@@ -309,7 +318,7 @@ export default function HomePage() {
                   LVL
                 </span>
                 <span className="text-lg font-mono font-black text-accent-cyan leading-none drop-shadow-[0_0_8px_rgba(79,172,254,0.5)]">
-                  {data.level}
+                  {data.level || 0}
                 </span>
               </div>
             </div>
@@ -320,7 +329,7 @@ export default function HomePage() {
         <GlassCard className="py-4 px-5 space-y-2.5">
           <div className="flex items-center justify-between text-xs font-mono">
             <span className="text-gray-300 font-semibold tracking-wide">
-              EXP {data.exp} / {requiredExp}
+              EXP {data.exp || 0} / {requiredExp}
             </span>
             <span className="text-accent-cyan font-bold">
               Next: +{nextDelta}
@@ -350,7 +359,7 @@ export default function HomePage() {
 
           {/* Space-y-3 of 4 NeumorphicButtons */}
           <div className="space-y-3">
-            {tier.exercises.map((exercise) => {
+            {tier?.exercises?.map((exercise) => {
               const isCompleted = !!data.dailyProgress?.[exercise.key];
               const expLabel = `+${expPerQuest.toFixed(1).replace(/\.0$/, "")} EXP`;
 
@@ -369,19 +378,27 @@ export default function HomePage() {
           </div>
         </GlassCard>
 
-        {/* CARD 4: COMPLETE HUNT ACTION (WITH ANTI-SPAM GUARD) */}
+        {/* CARD 4: COMPLETE HUNT ACTION */}
         <div>
           <motion.button
             whileTap={{ scale: 0.95 }}
             transition={{ type: "spring", stiffness: 400, damping: 25 }}
             onClick={handleCompleteHunt}
+            disabled={isClaiming || data.huntClaimedToday || completedCount === 0}
             className={`w-full py-5 rounded-2xl font-black text-base tracking-wider uppercase flex items-center justify-center gap-2 transition-all duration-200 border ${
               data.huntClaimedToday
                 ? "bg-dark-card/80 text-gray-400 border-white/5 shadow-neu-pressed cursor-not-allowed opacity-80"
+                : completedCount === 0
+                ? "bg-dark-card text-gray-500 border-white/5 shadow-neu-raised cursor-not-allowed opacity-60"
                 : "bg-gradient-to-r from-blue-600 via-accent-cyan to-blue-500 shadow-glow-cyan text-white border-white/20 active:opacity-90 cursor-pointer"
             }`}
           >
-            {data.huntClaimedToday ? (
+            {isClaiming ? (
+              <div className="flex items-center justify-center gap-2">
+                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                <span>Recording Hunt...</span>
+              </div>
+            ) : data.huntClaimedToday ? (
               <>
                 <Lock className="w-5 h-5 text-accent-cyan" />
                 Hunt Claimed (Resets Tomorrow)
@@ -389,7 +406,7 @@ export default function HomePage() {
             ) : (
               <>
                 <Swords className="w-5 h-5" />
-                Complete Hunt
+                {completedCount === 0 ? "Complete 1+ Quests" : "Complete Hunt"}
               </>
             )}
           </motion.button>
@@ -415,7 +432,10 @@ export default function HomePage() {
       {/* FULL-SCREEN LEVEL UP MODAL */}
       <LevelUpModal
         isOpen={showLevelUp}
-        onClose={() => setShowLevelUp(false)}
+        onClose={() => {
+          setShowLevelUp(false);
+          refreshHunter();
+        }}
         oldLevel={levelUpData.oldLevel}
         newLevel={levelUpData.newLevel}
         statPointsEarned={levelUpData.statPointsEarned}

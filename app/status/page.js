@@ -1,37 +1,75 @@
 "use client";
 
-import React from "react";
+import React, { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import {
   ArrowLeft,
-  Shield,
   Zap,
   Heart,
   Activity,
   Sparkles,
-  Award,
   ChevronLeft,
+  RefreshCw,
 } from "lucide-react";
-import { useSystemData } from "@/hooks/useSystemData";
+import { useAuth } from "@/context/AuthContext";
+import { useHunterData } from "@/hooks/useHunterData";
 import { GlassCard } from "@/components/ui/GlassCard";
+import { NeumorphicButton } from "@/components/ui/NeumorphicButton";
 
 export default function StatusPage() {
+  const router = useRouter();
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
   const {
     data,
     tier,
+    isLoading: hunterLoading,
     isLoaded,
+    error,
     allocateStat,
     decreaseStat,
-  } = useSystemData();
+    refreshHunter,
+    retry,
+  } = useHunterData();
 
-  if (!isLoaded) {
+  // --- REDIRECT UNAUTHENTICATED USERS ---
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      router.push("/login");
+    }
+  }, [authLoading, isAuthenticated, router]);
+
+  // --- LOADING STATE ---
+  if (authLoading || (hunterLoading && !data?.email)) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center space-y-3 select-none">
-        <div className="w-8 h-8 rounded-full border-2 border-accent-cyan border-t-transparent animate-spin" />
+      <div className="flex-1 flex flex-col items-center justify-center min-h-[80vh] space-y-3 select-none">
+        <div className="w-10 h-10 rounded-full border-2 border-accent-cyan border-t-transparent animate-spin" />
         <p className="text-xs font-mono text-gray-400 tracking-widest uppercase">
           CALIBRATING STATUS...
         </p>
+      </div>
+    );
+  }
+
+  // --- UNAUTHENTICATED GUARD ---
+  if (!isAuthenticated) {
+    return null;
+  }
+
+  // --- ERROR STATE ---
+  if (error && !data) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center min-h-[80vh] space-y-4 select-none px-4">
+        <GlassCard className="text-center space-y-4 w-full">
+          <div className="text-4xl">⚠️</div>
+          <h3 className="text-lg font-bold text-white font-mono">CONNECTION LOST</h3>
+          <p className="text-xs text-gray-400 leading-relaxed">{error}</p>
+          <NeumorphicButton onClick={retry} className="w-full justify-center text-sm">
+            <RefreshCw className="w-4 h-4 mr-2" />
+            Reconnect to System
+          </NeumorphicButton>
+        </GlassCard>
       </div>
     );
   }
@@ -72,6 +110,7 @@ export default function StatusPage() {
     <motion.div
       initial={{ opacity: 0, x: 20 }}
       animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: -20 }}
       transition={{ duration: 0.28, ease: "easeOut" }}
       className="w-full flex-1 flex flex-col justify-between select-none space-y-4 py-1"
     >
@@ -100,9 +139,9 @@ export default function StatusPage() {
         <div className="flex items-center justify-between">
           <div>
             <span
-              className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-md border ${tier.badgeClass}`}
+              className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-md border ${tier?.badgeClass || "bg-gray-800 text-gray-300 border-gray-700"}`}
             >
-              {tier.rank}
+              {tier?.rank || "E-Rank"}
             </span>
             <h1 className="text-xl font-black text-white mt-1 tracking-tight">
               Hunter Attributes
@@ -114,7 +153,7 @@ export default function StatusPage() {
               Current Rank
             </span>
             <span className="text-sm font-bold text-accent-cyan">
-              LVL {data.level}
+              LVL {data.level || 0}
             </span>
           </div>
         </div>
