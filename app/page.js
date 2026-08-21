@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
@@ -19,10 +19,12 @@ import {
   LogOut,
   RefreshCw,
   BookOpen,
+  BarChart3,
 } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { useAuth } from "@/context/AuthContext";
 import { useHunterData } from "@/hooks/useHunterData";
+import { useNotification } from "@/context/NotificationContext";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { NeumorphicButton } from "@/components/ui/NeumorphicButton";
 import { ExpBar } from "@/components/ui/ExpBar";
@@ -32,6 +34,7 @@ import { WorkoutTimer } from "@/components/ui/WorkoutTimer";
 export default function HomePage() {
   const router = useRouter();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const { showNotification } = useNotification();
   const {
     data,
     tier,
@@ -53,6 +56,7 @@ export default function HomePage() {
   const [huntFeedback, setHuntFeedback] = useState(null);
   const [showDevTools, setShowDevTools] = useState(false);
   const [isClaiming, setIsClaiming] = useState(false);
+  const initialBriefingShownRef = useRef(false);
 
   // Auto-redirect unauthenticated users to /login
   useEffect(() => {
@@ -60,6 +64,31 @@ export default function HomePage() {
       router.push("/login");
     }
   }, [authLoading, isAuthenticated, router]);
+
+  // First Load Daily Briefing Notification
+  useEffect(() => {
+    if (isLoaded && data?.email && !initialBriefingShownRef.current) {
+      initialBriefingShownRef.current = true;
+      const completed = Object.values(data.dailyProgress || {}).filter(Boolean).length;
+      const pct = Math.round((completed / 4) * 100);
+
+      if (data.huntClaimedToday) {
+        showNotification({
+          type: "summary",
+          title: "Today's Training Complete",
+          message: "Daily hunt claimed! Rest well for tomorrow's awakening.",
+          duration: 5000,
+        });
+      } else {
+        showNotification({
+          type: "summary",
+          title: "Today's Training",
+          message: `${completed} of 4 quests completed (${pct}%). Keep pushing, Hunter!`,
+          duration: 5000,
+        });
+      }
+    }
+  }, [isLoaded, data?.email, data?.dailyProgress, data?.huntClaimedToday, showNotification]);
 
   // Handler for completing quest via WorkoutTimer
   const handleCompleteTimerQuest = (exerciseKey, seconds) => {
@@ -75,6 +104,18 @@ export default function HomePage() {
     updateHunterProgress({
       dailyProgress: updatedDaily,
       dailyDurations: updatedDurations,
+    });
+
+    const expStr = expPerQuest.toFixed(1).replace(/\.0$/, "");
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    const timeFormatted = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
+
+    showNotification({
+      type: "complete",
+      title: "Task Complete!",
+      message: `+${expStr} EXP earned! Logged ${timeFormatted} of high-focus training.`,
+      duration: 3000,
     });
   };
 
@@ -121,22 +162,36 @@ export default function HomePage() {
    */
   const handleToggleQuest = async (exerciseKey) => {
     if (data.huntClaimedToday) {
-      setHuntFeedback({
-        type: "warning",
-        text: "Today's hunt is already recorded. Rest, Hunter!",
+      showNotification({
+        type: "reminder",
+        title: "Hunt Already Claimed",
+        message: "Today's hunt is already recorded. Rest, Hunter!",
+        duration: 4000,
       });
-      setTimeout(() => setHuntFeedback(null), 3000);
       return;
     }
 
+    const isMarkingComplete = !data.dailyProgress?.[exerciseKey];
+
     try {
       await toggleQuest(exerciseKey);
+
+      if (isMarkingComplete) {
+        const expStr = expPerQuest.toFixed(1).replace(/\.0$/, "");
+        showNotification({
+          type: "complete",
+          title: "Task Complete!",
+          message: `+${expStr} EXP earned! Great work, Hunter.`,
+          duration: 3000,
+        });
+      }
     } catch (err) {
-      setHuntFeedback({
-        type: "warning",
-        text: "Failed to update quest. Reconnecting...",
+      showNotification({
+        type: "reminder",
+        title: "Connection Issue",
+        message: "Failed to update quest. Reconnecting...",
+        duration: 4000,
       });
-      setTimeout(() => setHuntFeedback(null), 3000);
     }
   };
 
@@ -146,21 +201,23 @@ export default function HomePage() {
   const handleCompleteHunt = async () => {
     // --- GUARD 1: Prevent spam on the same day ---
     if (data.huntClaimedToday) {
-      setHuntFeedback({
-        type: "warning",
-        text: "Hunt already claimed today. Rest, Hunter. The System resets tomorrow.",
+      showNotification({
+        type: "reminder",
+        title: "Hunt Claimed",
+        message: "Hunt already claimed today. The System resets tomorrow.",
+        duration: 4000,
       });
-      setTimeout(() => setHuntFeedback(null), 4000);
       return;
     }
 
     // --- GUARD 2: Must complete at least 1 exercise ---
     if (completedCount === 0) {
-      setHuntFeedback({
-        type: "warning",
-        text: "Complete at least one exercise to claim your Hunt.",
+      showNotification({
+        type: "reminder",
+        title: "Quests Incomplete",
+        message: "Complete at least one exercise to claim your Hunt.",
+        duration: 4000,
       });
-      setTimeout(() => setHuntFeedback(null), 3000);
       return;
     }
 
@@ -171,25 +228,40 @@ export default function HomePage() {
       const result = await completeHunt();
 
       if (result?.levelUp) {
+        const statPointsEarned = (result.hunter.level - oldLevel) * 3;
         setLevelUpData({
           oldLevel: oldLevel,
           newLevel: result.hunter.level,
-          statPointsEarned: (result.hunter.level - oldLevel) * 3,
+          statPointsEarned,
         });
         setShowLevelUp(true);
-      } else if (result?.earnedExp) {
-        setHuntFeedback({
-          type: "success",
-          text: `+${result.earnedExp} EXP Added! Hunt Completed for Today.`,
+
+        // Persistent Level Up Notification with Action Button
+        showNotification({
+          type: "levelup",
+          title: "LEVEL UP!",
+          message: `Ascended to Level ${result.hunter.level}! +${statPointsEarned} Stat Points available to allocate.`,
+          action: {
+            label: "Go to Stats",
+            onClick: () => router.push("/status"),
+          },
+          duration: 0, // Persistent
         });
-        setTimeout(() => setHuntFeedback(null), 3500);
+      } else if (result?.earnedExp) {
+        showNotification({
+          type: "summary",
+          title: "Hunt Clear!",
+          message: `+${result.earnedExp} EXP Added! Daily workout saved to Activity Log.`,
+          duration: 5000,
+        });
       }
     } catch (err) {
-      setHuntFeedback({
-        type: "warning",
-        text: err.message || "Failed to complete hunt.",
+      showNotification({
+        type: "reminder",
+        title: "Hunt Error",
+        message: err.message || "Failed to complete hunt.",
+        duration: 4000,
       });
-      setTimeout(() => setHuntFeedback(null), 4000);
     } finally {
       setIsClaiming(false);
     }
@@ -327,6 +399,14 @@ export default function HomePage() {
                 title="View Activity History & Workout Logs"
               >
                 <BookOpen className="w-3.5 h-3.5 text-accent-cyan" />
+              </Link>
+
+              <Link
+                href="/analytics"
+                className="p-2 rounded-xl bg-dark-bg/80 shadow-neu-raised hover:text-accent-cyan text-gray-300 border border-white/5 transition-all active:shadow-neu-pressed"
+                title="View Visual Analytics & Progress Charts"
+              >
+                <BarChart3 className="w-3.5 h-3.5 text-accent-cyan" />
               </Link>
 
               {(data.streak || 0) > 0 && (

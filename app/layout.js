@@ -1,4 +1,6 @@
 import { AuthProvider } from "@/context/AuthContext";
+import { NotificationProvider } from "@/context/NotificationContext";
+import { NotificationBanner } from "@/components/ui/NotificationBanner";
 import "./globals.css";
 
 export const viewport = {
@@ -29,22 +31,27 @@ export default function RootLayout({ children }) {
     <html lang="en" className="dark">
       <body className="bg-dark-bg text-gray-100 antialiased min-h-screen relative overflow-x-hidden selection:bg-accent-cyan/30 selection:text-white">
         <AuthProvider>
-          {/* Atmospheric Glow Orb - Top Right */}
-          <div
-            className="fixed -top-12 -right-12 w-48 h-48 rounded-full bg-accent-cyan/25 blur-3xl pointer-events-none -z-10"
-            aria-hidden="true"
-          />
+          <NotificationProvider>
+            {/* Global Slide-down Floating Notification Banners */}
+            <NotificationBanner />
 
-          {/* Atmospheric Glow Orb - Bottom Left */}
-          <div
-            className="fixed -bottom-12 -left-12 w-48 h-48 rounded-full bg-purple-600/20 blur-3xl pointer-events-none -z-10"
-            aria-hidden="true"
-          />
+            {/* Atmospheric Glow Orb - Top Right */}
+            <div
+              className="fixed -top-12 -right-12 w-48 h-48 rounded-full bg-accent-cyan/25 blur-3xl pointer-events-none -z-10"
+              aria-hidden="true"
+            />
 
-          {/* Mobile-Capped Application Frame */}
-          <main className="max-w-sm mx-auto px-4 py-4 min-h-screen flex flex-col relative z-0">
-            {children}
-          </main>
+            {/* Atmospheric Glow Orb - Bottom Left */}
+            <div
+              className="fixed -bottom-12 -left-12 w-48 h-48 rounded-full bg-purple-600/20 blur-3xl pointer-events-none -z-10"
+              aria-hidden="true"
+            />
+
+            {/* Mobile-Capped Application Frame */}
+            <main className="max-w-sm mx-auto px-4 py-4 min-h-screen flex flex-col relative z-0">
+              {children}
+            </main>
+          </NotificationProvider>
         </AuthProvider>
       </body>
     </html>
