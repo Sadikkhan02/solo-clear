@@ -1,4 +1,10 @@
 import dotenv from "dotenv";
+import dns from "dns";
+
+try {
+  dns.setServers(["8.8.8.8", "1.1.1.1"]);
+} catch (e) {}
+
 dotenv.config({ path: ".env.local" });
 
 import mongoose from "mongoose";

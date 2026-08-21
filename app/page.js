@@ -20,6 +20,7 @@ import {
   RefreshCw,
   BookOpen,
   BarChart3,
+  Trophy,
 } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { useAuth } from "@/context/AuthContext";
@@ -407,6 +408,14 @@ export default function HomePage() {
                 title="View Visual Analytics & Progress Charts"
               >
                 <BarChart3 className="w-3.5 h-3.5 text-accent-cyan" />
+              </Link>
+
+              <Link
+                href="/rewards"
+                className="p-2 rounded-xl bg-dark-bg/80 shadow-neu-raised hover:text-accent-cyan text-gray-300 border border-white/5 transition-all active:shadow-neu-pressed"
+                title="View System Rewards & Milestones"
+              >
+                <Trophy className="w-3.5 h-3.5 text-amber-400" />
               </Link>
 
               {(data.streak || 0) > 0 && (

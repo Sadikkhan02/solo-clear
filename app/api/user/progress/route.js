@@ -11,6 +11,7 @@ const ALLOWED_FIELDS = [
   "dailyProgress",
   "dailyDurations",
   "durations",
+  "claimedMilestones",
   "stats",
   "statPoints",
   "streak",
@@ -70,6 +71,8 @@ export async function PUT(request) {
             }
           }
           updateFields.dailyDurations = sanitizedDurations;
+        } else if (key === "claimedMilestones" && Array.isArray(body[key])) {
+          updateFields.claimedMilestones = body[key].map(String);
         } else if (key === "stats" && typeof body[key] === "object") {
           const allowedStats = ["str", "vit", "agi"];
           const sanitizedStats = {};

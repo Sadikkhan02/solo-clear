@@ -98,8 +98,8 @@ export function LevelUpModal({
             </span>
           </div>
 
-          {/* Navigation Action to /status */}
-          <div className="w-full pt-1">
+          {/* Navigation Actions */}
+          <div className="w-full pt-1 space-y-2">
             <NeumorphicButton
               title="Allocate Stat Points"
               subtitle="Open Hunter Status Screen"
@@ -108,6 +108,17 @@ export function LevelUpModal({
               onClick={handleNavigateStatus}
               className="bg-dark-card border-accent-cyan/30 text-white shadow-neu-raised hover:border-accent-cyan/60"
             />
+
+            <button
+              onClick={() => {
+                if (onClose) onClose();
+                router.push("/rewards");
+              }}
+              className="text-xs font-mono text-gray-400 hover:text-accent-cyan transition-colors py-1 flex items-center justify-center gap-1 mx-auto"
+            >
+              <Trophy className="w-3.5 h-3.5 text-amber-400" />
+              <span>View System Rewards & Arsenal →</span>
+            </button>
           </div>
         </GlassCard>
       </div>

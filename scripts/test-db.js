@@ -1,5 +1,11 @@
 const mongoose = require("mongoose");
+const dns = require("dns");
 const path = require("path");
+
+try {
+  dns.setServers(["8.8.8.8", "1.1.1.1"]);
+} catch (e) {}
+
 require("dotenv").config({ path: path.join(__dirname, "..", ".env.local") });
 if (!process.env.MONGODB_URI) {
   require("dotenv").config({ path: path.join(__dirname, "..", ".env") });
