@@ -12,6 +12,7 @@ export const DEFAULT_HUNTER_DATA = {
     str: 0,
     vit: 0,
     agi: 0,
+    con: 0,
   },
   streak: 0,
   lastWorkoutDate: null,

@@ -12,6 +12,7 @@ import {
   Sparkles,
   ChevronLeft,
   RefreshCw,
+  Shield,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useHunterData } from "@/hooks/useHunterData";
@@ -101,6 +102,15 @@ export default function StatusPage() {
       accentBorder: "border-accent-cyan/20",
       icon: Activity,
       description: "Increases reaction velocity and evasion reflex.",
+    },
+    {
+      key: "con",
+      label: "CON",
+      title: "Constitution",
+      color: "text-amber-400",
+      accentBorder: "border-amber-500/20",
+      icon: Shield,
+      description: "Bolsters baseline vitality and adds +1% bonus EXP per point on hunt completions.",
     },
   ];
 

@@ -74,7 +74,7 @@ export async function PUT(request) {
         } else if (key === "claimedMilestones" && Array.isArray(body[key])) {
           updateFields.claimedMilestones = body[key].map(String);
         } else if (key === "stats" && typeof body[key] === "object") {
-          const allowedStats = ["str", "vit", "agi"];
+          const allowedStats = ["str", "vit", "agi", "con"];
           const sanitizedStats = {};
           for (const stat of allowedStats) {
             if (body[key][stat] !== undefined) {

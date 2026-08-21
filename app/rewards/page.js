@@ -102,7 +102,10 @@ export default function RewardsPage() {
   const claimedList = hunter?.claimedMilestones || ["e-rank"]; // e-rank claimed by default
 
   const allocatedStats =
-    (hunter?.stats?.str || 0) + (hunter?.stats?.vit || 0) + (hunter?.stats?.agi || 0);
+    (hunter?.stats?.str || 0) +
+    (hunter?.stats?.vit || 0) +
+    (hunter?.stats?.agi || 0) +
+    (hunter?.stats?.con || 0);
 
   // Handle Milestone Reward Claim
   const handleClaimMilestone = async (milestone) => {

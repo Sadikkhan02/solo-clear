@@ -4,6 +4,7 @@ import { connectToDatabase } from "@/lib/mongodb";
 import User from "@/lib/models/User";
 import {
   getRequiredExp,
+  getWorkoutProgression,
   getTier,
   getDaysDifference,
   getTodayDateString,
@@ -74,11 +75,17 @@ export async function POST() {
         ? Math.max(1, Math.round(totalDurationSeconds / 60))
         : Math.max(10, completedCount * 5);
 
-    // --- CALCULATE TIER & EXP ---
+    // --- CALCULATE PROGRESSION & EXP WITH CON BONUS ---
     const currentLevel = user.level || 0;
-    const tier = getTier(currentLevel);
-    const expPerQuest = tier.expReward / 4;
-    const earnedExp = Math.round(expPerQuest * completedCount * 10) / 10;
+    const progression = getWorkoutProgression(currentLevel);
+    const expPerQuest = progression.expReward / 4;
+    const rawExp = expPerQuest * completedCount;
+
+    // Constitution grants +1% EXP multiplier per point
+    const conStat = user.stats?.con || 0;
+    const conMultiplier = 1 + conStat * 0.01;
+
+    const earnedExp = Math.round(rawExp * conMultiplier * 10) / 10;
 
     let newExp = Math.max(0, (user.exp || 0) + earnedExp);
     let newLevel = currentLevel;

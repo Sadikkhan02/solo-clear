@@ -30,25 +30,29 @@ function CustomRadarTooltip({ active, payload }) {
   return null;
 }
 
-export function StatRadarChart({ stats = { str: 0, vit: 0, agi: 0 }, statPoints = 0 }) {
-  const str = stats.str || 0;
-  const vit = stats.vit || 0;
-  const agi = stats.agi || 0;
-  const totalStats = str + vit + agi;
+export function StatRadarChart({ stats = { str: 0, vit: 0, agi: 0, con: 0 }, statPoints = 0 }) {
+  const str = stats?.str || 0;
+  const vit = stats?.vit || 0;
+  const agi = stats?.agi || 0;
+  const con = stats?.con || 0;
+  const totalStats = str + vit + agi + con;
 
-  const maxVal = Math.max(15, str, vit, agi);
+  const maxVal = Math.max(15, str, vit, agi, con);
 
+  // 4-Axis Balanced Diamond: STR (Top) -> AGI (Right) -> VIT (Bottom) -> CON (Left)
   const radarData = [
     { subject: "STR", fullSubject: "Strength (STR)", stat: str, max: maxVal },
-    { subject: "VIT", fullSubject: "Vitality (VIT)", stat: vit, max: maxVal },
     { subject: "AGI", fullSubject: "Agility (AGI)", stat: agi, max: maxVal },
+    { subject: "VIT", fullSubject: "Vitality (VIT)", stat: vit, max: maxVal },
+    { subject: "CON", fullSubject: "Constitution (CON)", stat: con, max: maxVal },
   ];
 
   // Archetype evaluation
-  let archetype = "Balanced Hunter";
-  if (str > vit && str > agi) archetype = "Striker / Vanguard";
-  else if (vit > str && vit > agi) archetype = "Endurance Tank";
-  else if (agi > str && agi > vit) archetype = "Speed Assassin";
+  let archetype = "Balanced Shadow Monarch";
+  if (con > str && con > vit && con > agi) archetype = "Iron Fortress / Juggernaut";
+  else if (str > vit && str > agi && str > con) archetype = "Striker / Vanguard";
+  else if (vit > str && vit > agi && vit > con) archetype = "Endurance Tank";
+  else if (agi > str && agi > vit && agi > con) archetype = "Speed Assassin";
 
   return (
     <GlassCard className="py-4 px-4 space-y-3.5 select-none relative overflow-hidden">
@@ -99,19 +103,23 @@ export function StatRadarChart({ stats = { str: 0, vit: 0, agi: 0 }, statPoints 
         </ResponsiveContainer>
       </div>
 
-      {/* Stat Value Chips */}
-      <div className="grid grid-cols-3 gap-2 text-center pt-1">
+      {/* 4 Stat Value Chips */}
+      <div className="grid grid-cols-4 gap-1.5 text-center pt-1">
         <div className="p-2 rounded-xl bg-dark-bg/80 border border-red-500/20 shadow-neu-pressed">
-          <span className="text-[10px] font-mono text-red-400 block font-bold">STR</span>
-          <span className="text-base font-black font-mono text-white">{str}</span>
-        </div>
-        <div className="p-2 rounded-xl bg-dark-bg/80 border border-emerald-500/20 shadow-neu-pressed">
-          <span className="text-[10px] font-mono text-emerald-400 block font-bold">VIT</span>
-          <span className="text-base font-black font-mono text-white">{vit}</span>
+          <span className="text-[9px] font-mono text-red-400 block font-bold">STR</span>
+          <span className="text-sm font-black font-mono text-white">{str}</span>
         </div>
         <div className="p-2 rounded-xl bg-dark-bg/80 border border-cyan-500/20 shadow-neu-pressed">
-          <span className="text-[10px] font-mono text-cyan-400 block font-bold">AGI</span>
-          <span className="text-base font-black font-mono text-white">{agi}</span>
+          <span className="text-[9px] font-mono text-cyan-400 block font-bold">AGI</span>
+          <span className="text-sm font-black font-mono text-white">{agi}</span>
+        </div>
+        <div className="p-2 rounded-xl bg-dark-bg/80 border border-emerald-500/20 shadow-neu-pressed">
+          <span className="text-[9px] font-mono text-emerald-400 block font-bold">VIT</span>
+          <span className="text-sm font-black font-mono text-white">{vit}</span>
+        </div>
+        <div className="p-2 rounded-xl bg-dark-bg/80 border border-amber-500/20 shadow-neu-pressed">
+          <span className="text-[9px] font-mono text-amber-400 block font-bold">CON</span>
+          <span className="text-sm font-black font-mono text-white">{con}</span>
         </div>
       </div>
 

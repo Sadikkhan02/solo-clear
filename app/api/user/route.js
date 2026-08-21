@@ -114,7 +114,7 @@ export async function PUT(request) {
     for (const key of ALLOWED_FIELDS) {
       if (body[key] !== undefined) {
         if (key === "stats" && typeof body[key] === "object") {
-          const allowedStats = ["str", "vit", "agi"];
+          const allowedStats = ["str", "vit", "agi", "con"];
           const sanitizedStats = {};
           for (const stat of allowedStats) {
             if (body[key][stat] !== undefined) {
