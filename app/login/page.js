@@ -7,7 +7,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import GlassCard from "@/components/ui/GlassCard";
 import NeumorphicButton from "@/components/ui/NeumorphicButton";
-import { Eye, EyeOff, Mail, Lock, KeyRound } from "lucide-react";
+import { Eye, EyeOff, Mail, Lock, KeyRound, Sparkles } from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -59,11 +59,11 @@ export default function LoginPage() {
     >
       {/* Header */}
       <div className="text-center space-y-2">
-        <div className="inline-block px-4 py-1 mx-auto rounded-full bg-accent-cyan/10 border border-accent-cyan/30 text-accent-cyan text-xs font-mono tracking-widest uppercase">
+        <div className="inline-block px-4 py-1 mx-auto rounded-full bg-indigo-50 border border-indigo-200 text-primary text-xs font-mono tracking-widest uppercase font-bold">
           SYSTEM ACCESS
         </div>
-        <h1 className="text-3xl font-bold text-white tracking-wide">Hunter Login</h1>
-        <p className="text-white/40 text-sm">
+        <h1 className="text-3xl font-black text-text-primary tracking-tight">Hunter Login</h1>
+        <p className="text-text-secondary text-sm">
           Identify yourself to resume your daily quest.
         </p>
       </div>
@@ -71,50 +71,46 @@ export default function LoginPage() {
       {/* Form */}
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* Email Input Card */}
-        <GlassCard className="p-0 overflow-hidden">
-          <div className="flex items-center gap-3 px-4 bg-dark-card/30">
-            <Mail className="w-5 h-5 text-white/40 flex-shrink-0" />
-            <input
-              type="email"
-              placeholder="Hunter Email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full py-4 bg-transparent text-white placeholder-white/30 outline-none min-h-[56px] text-sm"
-              required
-              autoComplete="email"
-            />
-          </div>
-        </GlassCard>
+        <div className="rounded-2xl border border-slate-200/90 bg-white shadow-sm overflow-hidden flex items-center px-4">
+          <Mail className="w-5 h-5 text-slate-400 flex-shrink-0 mr-3" />
+          <input
+            type="email"
+            placeholder="Hunter Email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="w-full py-4 bg-transparent text-text-primary placeholder-slate-400 outline-none min-h-[56px] text-sm"
+            required
+            autoComplete="email"
+          />
+        </div>
 
         {/* Password Input Card */}
-        <GlassCard className="p-0 overflow-hidden">
-          <div className="flex items-center gap-3 px-4 bg-dark-card/30">
-            <Lock className="w-5 h-5 text-white/40 flex-shrink-0" />
-            <input
-              type={showPassword ? "text" : "password"}
-              placeholder="System Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full py-4 bg-transparent text-white placeholder-white/30 outline-none min-h-[56px] text-sm"
-              required
-              autoComplete="current-password"
-            />
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className="p-2 text-white/40 hover:text-white/80 transition-colors focus:outline-none"
-              aria-label={showPassword ? "Hide password" : "Show password"}
-            >
-              {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-            </button>
-          </div>
-        </GlassCard>
+        <div className="rounded-2xl border border-slate-200/90 bg-white shadow-sm overflow-hidden flex items-center px-4">
+          <Lock className="w-5 h-5 text-slate-400 flex-shrink-0 mr-3" />
+          <input
+            type={showPassword ? "text" : "password"}
+            placeholder="System Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="w-full py-4 bg-transparent text-text-primary placeholder-slate-400 outline-none min-h-[56px] text-sm"
+            required
+            autoComplete="current-password"
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassword(!showPassword)}
+            className="p-2 text-slate-400 hover:text-text-primary transition-colors focus:outline-none"
+            aria-label={showPassword ? "Hide password" : "Show password"}
+          >
+            {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+          </button>
+        </div>
 
         {/* Forgot Password Link */}
         <div className="flex justify-end px-1">
           <Link
             href="/forgot-password"
-            className="text-xs text-gray-400 hover:text-accent-cyan font-mono transition-colors"
+            className="text-xs text-text-muted hover:text-primary font-mono transition-colors"
           >
             Forgot Password?
           </Link>
@@ -125,7 +121,7 @@ export default function LoginPage() {
           <motion.div
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
-            className="px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-sm flex items-center gap-2"
+            className="px-4 py-3 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-sm flex items-center gap-2"
           >
             <span>⚠️</span>
             <span>{error}</span>
@@ -136,7 +132,7 @@ export default function LoginPage() {
         <NeumorphicButton
           type="submit"
           disabled={isLoading || !email || !password}
-          className="w-full justify-center text-center text-white font-bold bg-gradient-to-r from-accent-cyan to-blue-700 shadow-glow-cyan hover:shadow-2xl transition-all disabled:opacity-50"
+          className="w-full justify-center text-center text-white font-bold bg-gradient-to-r from-primary to-secondary shadow-glow-primary hover:opacity-95 transition-all disabled:opacity-50 border-none py-4 text-sm"
         >
           {isLoading ? (
             <div className="flex items-center justify-center gap-3">
@@ -153,9 +149,9 @@ export default function LoginPage() {
       <div className="text-center pt-2">
         <Link
           href="/register"
-          className="text-sm text-white/40 hover:text-accent-cyan transition-colors"
+          className="text-sm text-text-secondary hover:text-primary transition-colors"
         >
-          Unregistered Hunter? <span className="text-accent-cyan font-semibold">Awaken System</span>
+          Unregistered Hunter? <span className="text-primary font-semibold">Awaken System</span>
         </Link>
       </div>
     </motion.div>

@@ -23,7 +23,7 @@ import {
 const ExpChart = dynamic(() => import("@/components/ui/ExpChart"), {
   ssr: false,
   loading: () => (
-    <div className="w-full h-56 rounded-2xl bg-dark-card/50 border border-white/5 animate-pulse flex items-center justify-center text-xs font-mono text-gray-500">
+    <div className="w-full h-56 rounded-2xl bg-slate-100 border border-slate-200 animate-pulse flex items-center justify-center text-xs font-mono text-text-muted">
       Loading EXP Progression Chart...
     </div>
   ),
@@ -34,7 +34,7 @@ const CompletionBarChart = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="w-full h-48 rounded-2xl bg-dark-card/50 border border-white/5 animate-pulse flex items-center justify-center text-xs font-mono text-gray-500">
+      <div className="w-full h-48 rounded-2xl bg-slate-100 border border-slate-200 animate-pulse flex items-center justify-center text-xs font-mono text-text-muted">
         Loading Completion Rate Chart...
       </div>
     ),
@@ -44,7 +44,7 @@ const CompletionBarChart = dynamic(
 const StreakCalendar = dynamic(() => import("@/components/ui/StreakCalendar"), {
   ssr: false,
   loading: () => (
-    <div className="w-full h-44 rounded-2xl bg-dark-card/50 border border-white/5 animate-pulse flex items-center justify-center text-xs font-mono text-gray-500">
+    <div className="w-full h-44 rounded-2xl bg-slate-100 border border-slate-200 animate-pulse flex items-center justify-center text-xs font-mono text-text-muted">
       Loading Activity Heatmap...
     </div>
   ),
@@ -122,105 +122,108 @@ export default function AnalyticsPage() {
       });
     }
 
-    // Map logs to date lookup
-    const logMap = {};
+    // Map logs by date
+    const logMap = new Map();
     logs.forEach((log) => {
-      const dateKey = (log.date || (log.timestamp ? new Date(log.timestamp).toISOString().split("T")[0] : "")).trim();
-      if (dateKey) {
-        logMap[dateKey] = log;
+      if (log?.date) {
+        logMap.set(log.date, log);
       }
     });
 
-    let runningExp = 0;
-    let totalRangeExp = 0;
-    let activeDaysCount = 0;
-    let sumCompletionRate = 0;
+    let runningCumulativeExp = 0;
+    let totalTimeframeExp = 0;
+    let totalWorkouts = 0;
+    let totalCompletedQuests = 0;
 
-    const normalizedExp = [];
-    const normalizedCompletion = [];
+    const normalizedExpData = [];
+    const normalizedCompletionData = [];
 
-    daysList.forEach((day) => {
-      const log = logMap[day.date];
-      const dayExp = log ? Number(log.earnedExp) || 0 : 0;
-      runningExp += dayExp;
-      totalRangeExp += dayExp;
+    daysList.forEach((dayObj) => {
+      const log = logMap.get(dayObj.date);
 
-      let completedCount = 0;
-      if (log?.exercises) {
-        completedCount = Object.values(log.exercises).filter(Boolean).length;
+      if (log) {
+        const earned = Number(log.earnedExp) || 0;
+        const exercises = log.exercises || {};
+        const completedCount = Object.values(exercises).filter(Boolean).length;
+        const rate = Math.round((completedCount / 4) * 100);
+
+        runningCumulativeExp += earned;
+        totalTimeframeExp += earned;
+        totalWorkouts += 1;
+        totalCompletedQuests += completedCount;
+
+        normalizedExpData.push({
+          ...dayObj,
+          exp: Math.round(earned * 10) / 10,
+          cumulativeExp: Math.round(runningCumulativeExp * 10) / 10,
+          level: log.levelAtTime || 0,
+        });
+
+        normalizedCompletionData.push({
+          ...dayObj,
+          rate,
+          completed: completedCount,
+        });
+      } else {
+        normalizedExpData.push({
+          ...dayObj,
+          exp: 0,
+          cumulativeExp: Math.round(runningCumulativeExp * 10) / 10,
+          level: 0,
+        });
+
+        normalizedCompletionData.push({
+          ...dayObj,
+          rate: 0,
+          completed: 0,
+        });
       }
-
-      const rate = completedCount > 0 ? Math.round((completedCount / 4) * 100) : 0;
-      if (completedCount > 0) {
-        activeDaysCount += 1;
-        sumCompletionRate += rate;
-      }
-
-      normalizedExp.push({
-        ...day,
-        exp: dayExp,
-        cumulativeExp: Math.round(runningExp * 10) / 10,
-        level: log?.levelAtTime || hunter?.level || 0,
-      });
-
-      normalizedCompletion.push({
-        ...day,
-        rate,
-        completed: completedCount,
-      });
     });
 
-    // Heatmap: strictly last 30 calendar days
-    const last30Days = [];
+    // 30-Day Heatmap Fixed Window
+    const fixed30Days = [];
     for (let i = 29; i >= 0; i--) {
       const d = new Date(now);
       d.setDate(d.getDate() - i);
       const dateStr = d.toISOString().split("T")[0];
-      const shortLabel = `${d.getDate()}`;
-      const log = logMap[dateStr];
+      const log = logMap.get(dateStr);
+      const completedCount = log ? Object.values(log.exercises || {}).filter(Boolean).length : 0;
+      const rate = Math.round((completedCount / 4) * 100);
+      const earned = log ? Number(log.earnedExp) || 0 : 0;
 
-      let completedCount = 0;
-      if (log?.exercises) {
-        completedCount = Object.values(log.exercises).filter(Boolean).length;
-      }
-      const rate = completedCount > 0 ? Math.round((completedCount / 4) * 100) : 0;
-      const dayExp = log ? Number(log.earnedExp) || 0 : 0;
-
-      last30Days.push({
+      fixed30Days.push({
         date: dateStr,
         fullDate: d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
-        shortLabel,
+        shortLabel: `${d.getDate()}`,
         isToday: i === 0,
-        rate,
         completed: completedCount,
-        exp: dayExp,
-        hasWorkout: !!log,
+        rate,
+        exp: earned,
       });
     }
 
-    const avgCompletion =
-      activeDaysCount > 0 ? Math.round(sumCompletionRate / activeDaysCount) : 0;
+    const avgDailyExp = totalDays > 0 ? (totalTimeframeExp / totalDays).toFixed(1) : "0.0";
+    const overallRate = totalDays > 0 ? Math.round((totalCompletedQuests / (totalDays * 4)) * 100) : 0;
 
     return {
-      expData: normalizedExp,
-      completionData: normalizedCompletion,
-      heatmapDays: last30Days,
+      expData: normalizedExpData,
+      completionData: normalizedCompletionData,
+      heatmapDays: fixed30Days,
       kpis: {
-        totalRangeExp: Math.round(totalRangeExp * 10) / 10,
-        activeDaysCount,
-        totalDays,
-        avgCompletion,
-        streak: hunter?.streak || 0,
+        totalWorkouts,
+        totalTimeframeExp: Math.round(totalTimeframeExp * 10) / 10,
+        avgDailyExp,
+        overallRate,
       },
     };
-  }, [logs, selectedTimeframe, hunter]);
+  }, [logs, selectedTimeframe]);
 
-  if (authLoading || (isLoading && logs.length === 0)) {
+  if (authLoading || (!hunter?.email && isLoading)) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center min-h-[80vh] space-y-3 select-none">
-        <div className="w-10 h-10 rounded-full border-2 border-accent-cyan border-t-transparent animate-spin" />
-        <p className="text-xs font-mono text-gray-400 tracking-widest uppercase">
-          CALIBRATING SYSTEM METRICS...
+        <div className="w-10 h-10 rounded-full border-3 border-primary border-t-transparent animate-spin" />
+        <p className="text-xs font-mono text-text-muted tracking-widest uppercase">
+          CALCULATING PROGRESS METRICS...
         </p>
       </div>
     );
@@ -238,41 +241,22 @@ export default function AnalyticsPage() {
       <div className="flex items-center justify-between pt-1">
         <Link
           href="/"
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-dark-card shadow-neu-raised text-gray-300 text-xs font-mono font-bold hover:text-accent-cyan border border-white/5 active:shadow-neu-pressed transition-all"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white shadow-sm text-text-secondary text-xs font-mono font-bold hover:text-primary border border-slate-200 active:scale-95 transition-all"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
           <span>Dashboard</span>
         </Link>
 
-        <div className="flex items-center gap-2">
-          <span className="text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-full bg-accent-cyan/10 border border-accent-cyan/30 text-accent-cyan tracking-widest uppercase">
-            RANK {tier?.rankLetter || "E"} • LVL {hunter?.level || 0}
-          </span>
-        </div>
-      </div>
-
-      {/* Page Title & Timeframe Selector */}
-      <div className="flex items-center justify-between">
-        <div>
-          <span className="text-[9px] font-mono font-bold tracking-widest uppercase text-dark-muted">
-            PERFORMANCE TRAJECTORY
-          </span>
-          <h1 className="text-2xl font-black text-white tracking-tight flex items-center gap-2">
-            Visual Progress
-            <BarChart3 className="w-5 h-5 text-accent-cyan" />
-          </h1>
-        </div>
-
-        {/* Timeframe Filter Pills */}
-        <div className="flex items-center p-0.5 rounded-xl bg-dark-card border border-white/5 shadow-neu-pressed">
+        {/* Timeframe Selector Pills */}
+        <div className="flex items-center p-1 rounded-xl bg-white border border-slate-200 shadow-sm">
           {TIMEFRAMES.map((tf) => (
             <button
               key={tf.label}
               onClick={() => setSelectedTimeframe(tf.label)}
               className={`px-2.5 py-1 rounded-lg text-xs font-mono font-bold transition-all ${
                 selectedTimeframe === tf.label
-                  ? "bg-accent-cyan/20 text-accent-cyan shadow-glow-cyan"
-                  : "text-gray-400 hover:text-white"
+                  ? "bg-primary text-white shadow-sm"
+                  : "text-text-muted hover:text-text-primary"
               }`}
             >
               {tf.label}
@@ -281,56 +265,67 @@ export default function AnalyticsPage() {
         </div>
       </div>
 
-      {/* 4-Stat KPI Grid */}
+      {/* Page Title */}
+      <div>
+        <span className="text-[9px] font-mono font-bold tracking-widest uppercase text-text-muted">
+          PERFORMANCE & ANALYTICS
+        </span>
+        <h1 className="text-2xl font-black text-text-primary tracking-tight flex items-center gap-2">
+          Visual Progress
+          <BarChart3 className="w-5 h-5 text-primary" />
+        </h1>
+      </div>
+
+      {/* 4-KPI Metric Grid */}
       <div className="grid grid-cols-2 gap-2.5">
-        <GlassCard className="py-3 px-3.5 space-y-1">
-          <div className="flex items-center justify-between text-dark-muted text-[10px] font-mono">
-            <span>{selectedTimeframe} EXP</span>
-            <Zap className="w-3.5 h-3.5 text-accent-cyan" />
+        <GlassCard className="py-3 px-3.5 space-y-1 bg-white">
+          <div className="flex items-center justify-between text-text-muted text-[10px] font-mono">
+            <span>TOTAL WORKOUTS</span>
+            <TrendingUp className="w-3.5 h-3.5 text-primary" />
           </div>
-          <p className="text-lg font-black font-mono text-white">
-            +{kpis.totalRangeExp} <span className="text-xs text-accent-cyan">EXP</span>
+          <p className="text-lg font-black font-mono text-text-primary">
+            {kpis.totalWorkouts} <span className="text-xs text-text-muted">sessions</span>
           </p>
         </GlassCard>
 
-        <GlassCard className="py-3 px-3.5 space-y-1">
-          <div className="flex items-center justify-between text-dark-muted text-[10px] font-mono">
-            <span>ACTIVE DAYS</span>
-            <Calendar className="w-3.5 h-3.5 text-purple-400" />
+        <GlassCard className="py-3 px-3.5 space-y-1 bg-white">
+          <div className="flex items-center justify-between text-text-muted text-[10px] font-mono">
+            <span>EXP EARNED</span>
+            <Zap className="w-3.5 h-3.5 text-primary" />
           </div>
-          <p className="text-lg font-black font-mono text-white">
-            {kpis.activeDaysCount} <span className="text-xs text-dark-muted">/ {kpis.totalDays}d</span>
+          <p className="text-lg font-black font-mono text-primary">
+            +{kpis.totalTimeframeExp} <span className="text-xs text-text-muted">EXP</span>
           </p>
         </GlassCard>
 
-        <GlassCard className="py-3 px-3.5 space-y-1">
-          <div className="flex items-center justify-between text-dark-muted text-[10px] font-mono">
-            <span>AVG CLEAR RATE</span>
-            <Award className="w-3.5 h-3.5 text-emerald-400" />
+        <GlassCard className="py-3 px-3.5 space-y-1 bg-white">
+          <div className="flex items-center justify-between text-text-muted text-[10px] font-mono">
+            <span>DAILY AVG EXP</span>
+            <Award className="w-3.5 h-3.5 text-secondary" />
           </div>
-          <p className="text-lg font-black font-mono text-emerald-400">
-            {kpis.avgCompletion}%
+          <p className="text-lg font-black font-mono text-secondary">
+            {kpis.avgDailyExp} <span className="text-xs text-text-muted">/ day</span>
           </p>
         </GlassCard>
 
-        <GlassCard className="py-3 px-3.5 space-y-1">
-          <div className="flex items-center justify-between text-dark-muted text-[10px] font-mono">
-            <span>STREAK</span>
-            <Flame className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
+        <GlassCard className="py-3 px-3.5 space-y-1 bg-white">
+          <div className="flex items-center justify-between text-text-muted text-[10px] font-mono">
+            <span>COMPLETION RATE</span>
+            <Flame className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
           </div>
-          <p className="text-lg font-black font-mono text-amber-400">
-            {kpis.streak} <span className="text-xs text-dark-muted">days</span>
+          <p className="text-lg font-black font-mono text-amber-600">
+            {kpis.overallRate}% <span className="text-xs text-text-muted">avg</span>
           </p>
         </GlassCard>
       </div>
 
-      {/* Chart 1: EXP Progression (Line/Area) */}
+      {/* Main EXP Progression Area Chart */}
       <ExpChart data={expData} />
 
-      {/* Chart 2: Daily Completion Rate (Bar) */}
+      {/* Daily Completion Rate Bar Chart */}
       <CompletionBarChart data={completionData} />
 
-      {/* Chart 3: Activity Heatmap */}
+      {/* 30-Day Activity Streak Heatmap */}
       <StreakCalendar days={heatmapDays} />
     </motion.div>
   );

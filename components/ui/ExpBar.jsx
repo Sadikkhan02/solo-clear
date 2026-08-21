@@ -4,8 +4,8 @@ import React from "react";
 import { motion } from "framer-motion";
 
 /**
- * ExpBar: Mobile-optimized EXP gauge featuring a thick h-5 track,
- * neumorphic pressed inset depth, and an atmospheric cyan glowing gradient.
+ * ExpBar: Mobile-optimized EXP gauge featuring an Indigo-to-Violet gradient track,
+ * crisp percentage labels, and clean metadata display.
  */
 export function ExpBar({
   current = 0,
@@ -19,11 +19,11 @@ export function ExpBar({
 
   return (
     <div className={`w-full space-y-1.5 ${className}`}>
-      {/* Track: h-5 with shadow-neu-pressed */}
-      <div className="w-full h-5 rounded-full bg-dark-bg p-0.5 shadow-neu-pressed border border-white/5 relative overflow-hidden flex items-center">
-        {/* Animated Gradient Fill with Cyan Glow */}
+      {/* Track: h-5 with subtle inset border */}
+      <div className="w-full h-5 rounded-full bg-slate-100 p-0.5 border border-slate-200/80 shadow-inner relative overflow-hidden flex items-center">
+        {/* Animated Gradient Fill with Indigo Glow */}
         <motion.div
-          className="h-full rounded-full bg-gradient-to-r from-accent-blue via-accent-cyan to-accent-cyan shadow-glow-cyan"
+          className="h-full rounded-full bg-gradient-to-r from-primary to-secondary shadow-glow-primary"
           initial={{ width: 0 }}
           animate={{ width: `${percentage}%` }}
           transition={{ type: "spring", stiffness: 120, damping: 20 }}
@@ -31,7 +31,7 @@ export function ExpBar({
 
         {/* Center Progress Text Over Bar on Mobile */}
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <span className="text-[10px] font-mono font-bold text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
+          <span className="text-[10px] font-mono font-bold text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)]">
             {percentage}%
           </span>
         </div>
@@ -39,10 +39,10 @@ export function ExpBar({
 
       {/* Subtext info */}
       {showLabels && (
-        <div className="flex justify-between items-center text-[10px] font-mono text-dark-muted px-1">
+        <div className="flex justify-between items-center text-[10px] font-mono text-text-muted px-1">
           <span>{sublabel || "Level Progress"}</span>
-          <span className="text-gray-300">
-            {current} <span className="text-dark-muted">/ {max} EXP</span>
+          <span className="text-text-primary font-bold">
+            {current} <span className="text-text-muted font-normal">/ {max} EXP</span>
           </span>
         </div>
       )}

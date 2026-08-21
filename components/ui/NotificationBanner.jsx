@@ -16,44 +16,44 @@ import {
 
 const THEME_CONFIG = {
   levelup: {
-    borderColor: "border-accent-cyan/50",
-    glowColor: "shadow-[0_0_25px_rgba(79,172,254,0.35)]",
-    iconBg: "bg-accent-cyan/15 border-accent-cyan/40 text-accent-cyan",
-    titleColor: "text-accent-cyan",
+    borderColor: "border-primary/40",
+    glowColor: "shadow-glow-primary",
+    iconBg: "bg-indigo-50 border-indigo-200 text-primary",
+    titleColor: "text-primary",
     badge: "SYSTEM AWAKENING",
-    defaultIcon: <Zap className="w-4 h-4 text-accent-cyan fill-accent-cyan" />,
+    defaultIcon: <Zap className="w-4 h-4 text-primary fill-primary" />,
   },
   summary: {
-    borderColor: "border-purple-500/50",
-    glowColor: "shadow-[0_0_25px_rgba(168,85,247,0.35)]",
-    iconBg: "bg-purple-500/15 border-purple-500/40 text-purple-400",
-    titleColor: "text-purple-300",
+    borderColor: "border-secondary/40",
+    glowColor: "shadow-md",
+    iconBg: "bg-purple-50 border-purple-200 text-secondary",
+    titleColor: "text-secondary",
     badge: "DAILY BRIEFING",
-    defaultIcon: <Award className="w-4 h-4 text-purple-400" />,
+    defaultIcon: <Award className="w-4 h-4 text-secondary" />,
   },
   complete: {
-    borderColor: "border-emerald-500/50",
-    glowColor: "shadow-[0_0_25px_rgba(16,185,129,0.35)]",
-    iconBg: "bg-emerald-500/15 border-emerald-500/40 text-emerald-400",
-    titleColor: "text-emerald-300",
+    borderColor: "border-emerald-200",
+    glowColor: "shadow-md",
+    iconBg: "bg-emerald-50 border-emerald-200 text-emerald-600",
+    titleColor: "text-emerald-700",
     badge: "QUEST CLEAR",
-    defaultIcon: <CheckCircle2 className="w-4 h-4 text-emerald-400" />,
+    defaultIcon: <CheckCircle2 className="w-4 h-4 text-emerald-600" />,
   },
   reminder: {
-    borderColor: "border-amber-500/50",
-    glowColor: "shadow-[0_0_25px_rgba(245,158,11,0.35)]",
-    iconBg: "bg-amber-500/15 border-amber-500/40 text-amber-400",
-    titleColor: "text-amber-300",
+    borderColor: "border-amber-200",
+    glowColor: "shadow-md",
+    iconBg: "bg-amber-50 border-amber-200 text-amber-600",
+    titleColor: "text-amber-700",
     badge: "SYSTEM NOTICE",
-    defaultIcon: <Bell className="w-4 h-4 text-amber-400" />,
+    defaultIcon: <Bell className="w-4 h-4 text-amber-600" />,
   },
   info: {
-    borderColor: "border-blue-500/40",
-    glowColor: "shadow-[0_0_20px_rgba(59,130,246,0.25)]",
-    iconBg: "bg-blue-500/15 border-blue-500/30 text-blue-400",
-    titleColor: "text-blue-300",
+    borderColor: "border-slate-200",
+    glowColor: "shadow-md",
+    iconBg: "bg-slate-50 border-slate-200 text-primary",
+    titleColor: "text-primary",
     badge: "ALERT",
-    defaultIcon: <Info className="w-4 h-4 text-blue-400" />,
+    defaultIcon: <Info className="w-4 h-4 text-primary" />,
   },
 };
 
@@ -76,11 +76,8 @@ export function NotificationBanner() {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -16, scale: 0.94, transition: { duration: 0.2 } }}
               transition={{ type: "spring", stiffness: 450, damping: 30 }}
-              className={`w-full pointer-events-auto rounded-2xl bg-[#0e111a]/98 backdrop-blur-2xl border ${config.borderColor} ${config.glowColor} p-3.5 shadow-2xl relative overflow-hidden select-none`}
+              className={`w-full pointer-events-auto rounded-2xl bg-white border ${config.borderColor} ${config.glowColor} p-3.5 shadow-lg relative overflow-hidden select-none`}
             >
-              {/* Subtle Ambient Gradient */}
-              <div className="absolute inset-0 bg-gradient-to-r from-white/[0.04] to-transparent pointer-events-none" />
-
               <div className="flex items-start gap-3 relative z-10">
                 {/* Type Icon Badge */}
                 <div
@@ -92,7 +89,7 @@ export function NotificationBanner() {
                 {/* Content */}
                 <div className="flex-1 min-w-0 pr-6">
                   <div className="flex items-center gap-2">
-                    <span className="text-[9px] font-mono font-bold tracking-widest uppercase text-dark-muted">
+                    <span className="text-[9px] font-mono font-bold tracking-widest uppercase text-text-muted">
                       {config.badge}
                     </span>
                   </div>
@@ -102,7 +99,7 @@ export function NotificationBanner() {
                   </h3>
 
                   {notif.message && (
-                    <p className="text-[11px] text-gray-300 leading-snug mt-0.5 break-words">
+                    <p className="text-[11px] text-text-secondary leading-snug mt-0.5 break-words">
                       {notif.message}
                     </p>
                   )}
@@ -117,7 +114,7 @@ export function NotificationBanner() {
                           }
                           dismissNotification(notif.id);
                         }}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-accent-cyan/20 border border-accent-cyan/50 text-accent-cyan text-[11px] font-mono font-bold hover:bg-accent-cyan/30 active:scale-95 transition-all shadow-glow-cyan"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-50 border border-primary/40 text-primary text-[11px] font-mono font-bold hover:bg-indigo-100 active:scale-95 transition-all shadow-sm"
                       >
                         <span>{notif.action.label}</span>
                         <ArrowRight className="w-3 h-3" />
@@ -129,7 +126,7 @@ export function NotificationBanner() {
                 {/* Dismiss X Button */}
                 <button
                   onClick={() => dismissNotification(notif.id)}
-                  className="absolute top-2.5 right-2.5 p-1 rounded-lg text-white/40 hover:text-white hover:bg-white/5 active:scale-90 transition-all"
+                  className="absolute top-2.5 right-2.5 p-1 rounded-lg text-slate-400 hover:text-text-primary hover:bg-slate-100 active:scale-90 transition-all"
                   aria-label="Dismiss Notification"
                 >
                   <X className="w-3.5 h-3.5" />

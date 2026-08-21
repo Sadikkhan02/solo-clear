@@ -9,7 +9,7 @@ import { NeumorphicButton } from "@/components/ui/NeumorphicButton";
 
 /**
  * LevelUpModal: Full-screen mobile overlay alert for level-up moments.
- * Backed by bg-black/70 backdrop-blur-md and a centered w-[90%] max-h-[80vh] GlassCard.
+ * Light & Indigo celebration card with particle glow and stat reward highlight.
  */
 export function LevelUpModal({
   isOpen = false,
@@ -30,20 +30,20 @@ export function LevelUpModal({
   return (
     <AnimatePresence>
       <div
-        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md select-none"
+        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm select-none"
         role="dialog"
         aria-modal="true"
       >
         <GlassCard
           glow={true}
-          className="w-[90%] max-h-[80vh] p-6 rounded-3xl border-accent-cyan/40 shadow-glow-cyan text-center flex flex-col items-center justify-center space-y-5 relative overflow-y-auto"
+          className="w-[90%] max-h-[85vh] p-6 rounded-3xl border-primary/30 shadow-2xl text-center flex flex-col items-center justify-center space-y-4 relative overflow-y-auto bg-white"
         >
           {/* Subtle ambient aura */}
-          <div className="absolute -top-16 left-1/2 -translate-x-1/2 w-44 h-44 rounded-full bg-accent-cyan/25 blur-3xl pointer-events-none" />
+          <div className="absolute -top-16 left-1/2 -translate-x-1/2 w-44 h-44 rounded-full bg-primary/15 blur-3xl pointer-events-none" />
 
           {/* System Notification Header */}
-          <div className="inline-flex items-center space-x-1.5 px-3.5 py-1 rounded-full bg-accent-cyan/10 border border-accent-cyan/30 text-accent-cyan text-[11px] font-mono font-bold uppercase tracking-widest">
-            <Zap className="w-3.5 h-3.5" />
+          <div className="inline-flex items-center space-x-1.5 px-3.5 py-1 rounded-full bg-indigo-50 border border-indigo-200 text-primary text-[10px] font-mono font-bold uppercase tracking-widest">
+            <Zap className="w-3.5 h-3.5 text-primary" />
             SYSTEM NOTIFICATION
           </div>
 
@@ -53,47 +53,47 @@ export function LevelUpModal({
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ type: "spring", stiffness: 350, damping: 20 }}
-              className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-cyan-200 to-accent-cyan tracking-tight uppercase drop-shadow-[0_0_15px_rgba(79,172,254,0.6)]"
+              className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-primary via-indigo-600 to-secondary tracking-tight uppercase"
             >
               ⬆ LEVEL UP!
             </motion.h2>
-            <p className="text-xs text-gray-300">
+            <p className="text-xs text-text-secondary">
               Combat limits breached. The System has granted new power.
             </p>
           </div>
 
           {/* Level Transition Indicator */}
-          <div className="w-full p-4 rounded-2xl bg-dark-bg/90 shadow-neu-pressed border border-white/5 flex items-center justify-around">
+          <div className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-around shadow-inner">
             <div className="text-center">
-              <span className="text-[10px] font-mono text-dark-muted block uppercase">
+              <span className="text-[10px] font-mono text-text-muted block uppercase">
                 Previous
               </span>
-              <span className="text-xl font-mono font-bold text-gray-400">
+              <span className="text-xl font-mono font-bold text-slate-400">
                 LVL {oldLevel}
               </span>
             </div>
 
-            <div className="w-8 h-8 rounded-full bg-dark-card shadow-neu-raised flex items-center justify-center text-accent-cyan">
+            <div className="w-8 h-8 rounded-full bg-white shadow-sm border border-slate-200 flex items-center justify-center text-primary">
               <ArrowRight className="w-4 h-4" />
             </div>
 
             <div className="text-center">
-              <span className="text-[10px] font-mono text-accent-cyan block uppercase font-bold">
+              <span className="text-[10px] font-mono text-primary block uppercase font-bold">
                 Ascended
               </span>
-              <span className="text-2xl font-mono font-black text-accent-cyan drop-shadow-[0_0_10px_rgba(79,172,254,0.6)]">
+              <span className="text-2xl font-mono font-black text-primary">
                 LVL {newLevel}
               </span>
             </div>
           </div>
 
           {/* Rewards Badge */}
-          <div className="w-full p-3 rounded-xl bg-accent-cyan/10 border border-accent-cyan/20 flex items-center justify-between text-xs font-mono">
-            <span className="flex items-center gap-1.5 text-accent-cyan font-bold">
-              <Trophy className="w-4 h-4" />
+          <div className="w-full p-3 rounded-2xl bg-indigo-50/80 border border-indigo-200 flex items-center justify-between text-xs font-mono">
+            <span className="flex items-center gap-1.5 text-primary font-bold">
+              <Trophy className="w-4 h-4 text-amber-500" />
               Stat Points Earned:
             </span>
-            <span className="px-2 py-0.5 rounded-md bg-accent-cyan text-dark-bg font-black">
+            <span className="px-2.5 py-0.5 rounded-lg bg-primary text-white font-black">
               +{statPointsEarned}
             </span>
           </div>
@@ -103,10 +103,10 @@ export function LevelUpModal({
             <NeumorphicButton
               title="Allocate Stat Points"
               subtitle="Open Hunter Status Screen"
-              icon={<Sparkles className="w-5 h-5 text-accent-cyan" />}
+              icon={<Sparkles className="w-5 h-5 text-primary" />}
               badge="→"
               onClick={handleNavigateStatus}
-              className="bg-dark-card border-accent-cyan/30 text-white shadow-neu-raised hover:border-accent-cyan/60"
+              className="bg-white border-primary/30 text-text-primary shadow-sm hover:border-primary"
             />
 
             <button
@@ -114,9 +114,9 @@ export function LevelUpModal({
                 if (onClose) onClose();
                 router.push("/rewards");
               }}
-              className="text-xs font-mono text-gray-400 hover:text-accent-cyan transition-colors py-1 flex items-center justify-center gap-1 mx-auto"
+              className="text-xs font-mono text-text-muted hover:text-primary transition-colors py-1 flex items-center justify-center gap-1 mx-auto"
             >
-              <Trophy className="w-3.5 h-3.5 text-amber-400" />
+              <Trophy className="w-3.5 h-3.5 text-amber-500" />
               <span>View System Rewards & Arsenal →</span>
             </button>
           </div>

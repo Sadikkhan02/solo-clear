@@ -107,26 +107,86 @@ export default function HomePage() {
       dailyDurations: updatedDurations,
     });
 
-    const expStr = expPerQuest.toFixed(1).replace(/\.0$/, "");
+    const exObj = tier?.exercises?.find((e) => e.key === exerciseKey);
+    const exName = exObj?.name || "Quest";
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     const timeFormatted = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
 
     showNotification({
       type: "complete",
-      title: "Task Complete!",
-      message: `+${expStr} EXP earned! Logged ${timeFormatted} of high-focus training.`,
-      duration: 3000,
+      title: "Task Completed!",
+      message: `${exName} finished in ${timeFormatted}! Progress recorded.`,
+      duration: 4000,
     });
   };
 
-  // --- LOADING STATE ---
+  // Handler for Claim Daily Hunt
+  const handleClaimHunt = async () => {
+    if (isClaiming) return;
+    setIsClaiming(true);
+    setHuntFeedback(null);
+
+    const oldLvl = data.level || 0;
+    const res = await completeHunt();
+
+    setIsClaiming(false);
+
+    if (res.success) {
+      setHuntFeedback({
+        type: "success",
+        message: `Hunt Claimed! Earned +${res.earnedExp} EXP in ${res.actualDurationMinutes || 15}m.`,
+      });
+
+      if (res.levelUp) {
+        const pointsGained = res.levelsGained * 3;
+        setLevelUpData({
+          oldLevel: oldLvl,
+          newLevel: res.hunter?.level || oldLvl + res.levelsGained,
+          statPointsEarned: pointsGained,
+        });
+        setShowLevelUp(true);
+
+        showNotification({
+          type: "levelup",
+          title: "LEVEL UP!",
+          message: `Ascended to Level ${res.hunter?.level}! You earned +${pointsGained} Stat Points.`,
+          action: {
+            label: "Go to Stats →",
+            onClick: () => router.push("/status"),
+          },
+          duration: 0,
+        });
+      } else {
+        showNotification({
+          type: "summary",
+          title: "Hunt Completed!",
+          message: `Earned +${res.earnedExp} EXP! Streak preserved at ${res.hunter?.streak || 1} days.`,
+          duration: 5000,
+        });
+      }
+    } else {
+      setHuntFeedback({
+        type: "error",
+        message: res.error || "Failed to complete hunt. Try again.",
+      });
+
+      showNotification({
+        type: "reminder",
+        title: "Action Required",
+        message: res.error || "Please complete at least one quest before claiming.",
+        duration: 5000,
+      });
+    }
+  };
+
+  // --- INITIAL LOADING STATE ---
   if (authLoading || (hunterLoading && !data?.email)) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center min-h-[80vh] space-y-3 select-none">
-        <div className="w-10 h-10 rounded-full border-2 border-accent-cyan border-t-transparent animate-spin" />
-        <p className="text-xs font-mono text-gray-400 tracking-widest uppercase">
-          INITIALIZING SYSTEM...
+      <div className="flex-1 flex flex-col items-center justify-center min-h-[85vh] space-y-4 select-none">
+        <div className="w-12 h-12 rounded-full border-3 border-primary border-t-transparent animate-spin" />
+        <p className="text-xs font-mono text-text-muted tracking-widest uppercase">
+          CALIBRATING HUNTER SYSTEM...
         </p>
       </div>
     );
@@ -137,14 +197,14 @@ export default function HomePage() {
     return null;
   }
 
-  // --- ERROR STATE ---
+  // --- ERROR / RECONNECT STATE ---
   if (error && !data) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center min-h-[80vh] space-y-4 select-none px-4">
+      <div className="flex-1 flex flex-col items-center justify-center min-h-[85vh] space-y-4 select-none px-4">
         <GlassCard className="text-center space-y-4 w-full">
           <div className="text-4xl">⚠️</div>
-          <h3 className="text-lg font-bold text-white font-mono">CONNECTION LOST</h3>
-          <p className="text-xs text-gray-400 leading-relaxed">{error}</p>
+          <h3 className="text-lg font-bold text-text-primary font-mono">CONNECTION LOST</h3>
+          <p className="text-xs text-text-secondary leading-relaxed">{error}</p>
           <NeumorphicButton onClick={retry} className="w-full justify-center text-sm">
             <RefreshCw className="w-4 h-4 mr-2" />
             Reconnect to System
@@ -154,152 +214,34 @@ export default function HomePage() {
     );
   }
 
-  // Calculate completed daily quests count
-  const completedCount = Object.values(data.dailyProgress || {}).filter(Boolean).length;
-  const expPerQuest = tier ? tier.expReward / 4 : 2.5;
-
-  /**
-   * Toggle a specific quest in dailyProgress immediately
-   */
-  const handleToggleQuest = async (exerciseKey) => {
-    if (data.huntClaimedToday) {
-      showNotification({
-        type: "reminder",
-        title: "Hunt Already Claimed",
-        message: "Today's hunt is already recorded. Rest, Hunter!",
-        duration: 4000,
-      });
-      return;
-    }
-
-    const isMarkingComplete = !data.dailyProgress?.[exerciseKey];
-
-    try {
-      await toggleQuest(exerciseKey);
-
-      if (isMarkingComplete) {
-        const expStr = expPerQuest.toFixed(1).replace(/\.0$/, "");
-        showNotification({
-          type: "complete",
-          title: "Task Complete!",
-          message: `+${expStr} EXP earned! Great work, Hunter.`,
-          duration: 3000,
-        });
-      }
-    } catch (err) {
-      showNotification({
-        type: "reminder",
-        title: "Connection Issue",
-        message: "Failed to update quest. Reconnecting...",
-        duration: 4000,
-      });
-    }
-  };
-
-  /**
-   * Complete Hunt action (Authoritative Server-side loop)
-   */
-  const handleCompleteHunt = async () => {
-    // --- GUARD 1: Prevent spam on the same day ---
-    if (data.huntClaimedToday) {
-      showNotification({
-        type: "reminder",
-        title: "Hunt Claimed",
-        message: "Hunt already claimed today. The System resets tomorrow.",
-        duration: 4000,
-      });
-      return;
-    }
-
-    // --- GUARD 2: Must complete at least 1 exercise ---
-    if (completedCount === 0) {
-      showNotification({
-        type: "reminder",
-        title: "Quests Incomplete",
-        message: "Complete at least one exercise to claim your Hunt.",
-        duration: 4000,
-      });
-      return;
-    }
-
-    setIsClaiming(true);
-    const oldLevel = data.level || 0;
-
-    try {
-      const result = await completeHunt();
-
-      if (result?.levelUp) {
-        const statPointsEarned = (result.hunter.level - oldLevel) * 3;
-        setLevelUpData({
-          oldLevel: oldLevel,
-          newLevel: result.hunter.level,
-          statPointsEarned,
-        });
-        setShowLevelUp(true);
-
-        // Persistent Level Up Notification with Action Button
-        showNotification({
-          type: "levelup",
-          title: "LEVEL UP!",
-          message: `Ascended to Level ${result.hunter.level}! +${statPointsEarned} Stat Points available to allocate.`,
-          action: {
-            label: "Go to Stats",
-            onClick: () => router.push("/status"),
-          },
-          duration: 0, // Persistent
-        });
-      } else if (result?.earnedExp) {
-        showNotification({
-          type: "summary",
-          title: "Hunt Clear!",
-          message: `+${result.earnedExp} EXP Added! Daily workout saved to Activity Log.`,
-          duration: 5000,
-        });
-      }
-    } catch (err) {
-      showNotification({
-        type: "reminder",
-        title: "Hunt Error",
-        message: err.message || "Failed to complete hunt.",
-        duration: 4000,
-      });
-    } finally {
-      setIsClaiming(false);
-    }
-  };
-
   const nextDelta = Math.max(0, Math.round((requiredExp - (data.exp || 0)) * 10) / 10);
+  const completedCount = Object.values(data.dailyProgress || {}).filter(Boolean).length;
+  const isClaimLocked = completedCount === 0 || data.huntClaimedToday;
 
   return (
     <motion.div
-      initial={{ opacity: 0, x: 20 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: -20 }}
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.28, ease: "easeOut" }}
-      className="w-full flex-1 flex flex-col justify-between select-none space-y-4 pb-4"
+      className="flex-1 flex flex-col space-y-4 select-none pb-6"
     >
-      {/* Penalty Notice Banner (if triggered) */}
-      <AnimatePresence>
-        {penaltyInfo && penaltyInfo.applied && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-          >
-            <GlassCard className="bg-rose-950/40 border-rose-500/30 text-rose-200 py-3 px-4">
-              <div className="flex items-center space-x-2.5">
-                <Skull className="w-4 h-4 text-rose-400 flex-shrink-0" />
-                <p className="text-[11px] leading-tight">
-                  <span className="font-bold text-rose-300">⚠️ SYSTEM PENALTY: </span>
-                  50% EXP drained. ({penaltyInfo.daysMissed} days idle, streak reset to 0).
-                </p>
-              </div>
-            </GlassCard>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* 2-Day Inactivity Penalty Warning Banner */}
+      {penaltyInfo?.isPenaltyApplied && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="p-3 rounded-2xl bg-amber-50 border border-amber-300 text-amber-900 text-xs font-mono flex items-center justify-between shadow-sm"
+        >
+          <div className="flex items-center space-x-2">
+            <ShieldAlert className="w-4 h-4 text-amber-600 flex-shrink-0" />
+            <span>
+              <strong>INACTIVITY PENALTY:</strong> 50% EXP deducted & streak reset.
+            </span>
+          </div>
+        </motion.div>
+      )}
 
-      {/* Dev / Penalty Simulator Drawer (Conditional) */}
+      {/* Dev / Simulator Tools Panel */}
       <AnimatePresence>
         {showDevTools && (
           <motion.div
@@ -308,21 +250,16 @@ export default function HomePage() {
             exit={{ opacity: 0, height: 0 }}
             className="overflow-hidden"
           >
-            <GlassCard className="bg-dark-card/95 border-accent-cyan/30 shadow-neu-pressed space-y-2.5">
-              <div className="flex items-center justify-between text-[11px]">
-                <span className="font-mono text-accent-cyan uppercase font-bold flex items-center gap-1.5">
-                  <Clock className="w-3.5 h-3.5" />
-                  System Simulator & Session
-                </span>
-                <span className="text-[10px] text-dark-muted font-mono truncate max-w-[120px]">
-                  {data.email}
-                </span>
+            <GlassCard className="p-4 space-y-3 border-indigo-200 bg-indigo-50/50">
+              <div className="flex items-center justify-between text-xs font-mono text-text-muted">
+                <span>SYSTEM SIMULATOR</span>
+                <span className="text-[10px] text-text-muted">{data.email}</span>
               </div>
               <div className="grid grid-cols-3 gap-2">
                 <motion.button
                   whileTap={{ scale: 0.95 }}
                   onClick={() => refreshHunter()}
-                  className="py-2 px-1.5 rounded-xl bg-dark-bg text-accent-cyan text-[11px] font-mono border border-accent-cyan/20 shadow-neu-raised hover:border-accent-cyan/50 flex items-center justify-center gap-1 active:shadow-neu-pressed text-center"
+                  className="py-2 px-1.5 rounded-xl bg-white text-primary text-[11px] font-mono border border-slate-200 shadow-sm hover:border-primary flex items-center justify-center gap-1 active:shadow-inner text-center"
                 >
                   <RefreshCw className="w-3 h-3" />
                   Refresh
@@ -330,7 +267,7 @@ export default function HomePage() {
                 <motion.button
                   whileTap={{ scale: 0.95 }}
                   onClick={() => updateHunterProgress({ huntClaimedToday: false, dailyProgress: { pushups: false, squats: false, crunches: false, running: false } })}
-                  className="py-2 px-1.5 rounded-xl bg-dark-bg text-emerald-400 text-[11px] font-mono border border-emerald-500/20 shadow-neu-raised hover:border-emerald-400/50 flex items-center justify-center gap-1 active:shadow-neu-pressed text-center"
+                  className="py-2 px-1.5 rounded-xl bg-white text-emerald-600 text-[11px] font-mono border border-slate-200 shadow-sm hover:border-emerald-500 flex items-center justify-center gap-1 active:shadow-inner text-center"
                 >
                   <RotateCcw className="w-3 h-3" />
                   Reset Quests
@@ -338,7 +275,7 @@ export default function HomePage() {
                 <motion.button
                   whileTap={{ scale: 0.95 }}
                   onClick={() => signOut({ callbackUrl: "/login" })}
-                  className="py-2 px-1.5 rounded-xl bg-dark-bg text-rose-400 text-[11px] font-mono border border-rose-500/20 shadow-neu-raised hover:border-rose-400/50 flex items-center justify-center gap-1 active:shadow-neu-pressed text-center"
+                  className="py-2 px-1.5 rounded-xl bg-white text-rose-600 text-[11px] font-mono border border-slate-200 shadow-sm hover:border-rose-500 flex items-center justify-center gap-1 active:shadow-inner text-center"
                 >
                   <LogOut className="w-3 h-3" />
                   Sign Out
@@ -350,33 +287,33 @@ export default function HomePage() {
       </AnimatePresence>
 
       {/* Main 4-Card Vertical Stack */}
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-3.5">
         {/* CARD 1: PROFILE & RANK */}
-        <GlassCard glow={true} className="py-4 px-5">
+        <GlassCard glow={true} className="py-4 px-4">
           <div className="flex items-center justify-between">
             {/* Left: Rank & Level */}
             <div className="space-y-1">
               <div className="flex items-center space-x-2">
                 <span
-                  className={`text-[11px] font-mono font-bold px-2 py-0.5 rounded-md border ${tier?.badgeClass || "bg-gray-800 text-gray-300 border-gray-700"}`}
+                  className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-md border uppercase tracking-wider ${tier?.badgeClass || "bg-slate-100 text-slate-700 border-slate-200"}`}
                 >
-                  Rank: {tier?.rankLetter || "E"}
+                  {tier?.rankLetter || "E"}-Rank
                 </span>
-                <span className="text-xs text-gray-400 font-medium tracking-wide">
+                <span className="text-xs text-text-secondary font-medium tracking-wide">
                   {tier?.title || "Novice Awakened"}
                 </span>
               </div>
-              <h1 className="text-2xl font-black text-white tracking-tight flex items-center gap-1.5">
+              <h1 className="text-2xl font-black text-text-primary tracking-tight flex items-center gap-1.5">
                 Level {data.level || 0}
-                <Sparkles className="w-4 h-4 text-accent-cyan" />
+                <Sparkles className="w-4 h-4 text-primary" />
               </h1>
             </div>
 
-            {/* Right: Circular w-14 h-14 Neumorphic Badge & Tools */}
-            <div className="flex items-center space-x-2">
+            {/* Right: Tools & Level Indicator */}
+            <div className="flex items-center space-x-1.5">
               <button
                 onClick={() => setShowDevTools(!showDevTools)}
-                className="p-2 rounded-xl bg-dark-bg/80 shadow-neu-raised hover:text-accent-cyan text-dark-muted border border-white/5 transition-all active:shadow-neu-pressed"
+                className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-text-muted border border-slate-200 transition-all active:scale-95"
                 title="System Tools & Logout"
                 aria-label="Toggle Simulator"
               >
@@ -385,52 +322,51 @@ export default function HomePage() {
 
               <Link
                 href="/status"
-                className="p-2 rounded-xl bg-dark-bg/80 shadow-neu-raised hover:text-accent-cyan text-gray-300 border border-white/5 transition-all active:shadow-neu-pressed relative"
+                className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-text-primary border border-slate-200 transition-all active:scale-95 relative"
                 title="View Hunter Status & Stats"
               >
-                <Sliders className="w-3.5 h-3.5 text-accent-cyan" />
+                <Sliders className="w-3.5 h-3.5 text-primary" />
                 {(data.statPoints || 0) > 0 && (
-                  <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-accent-cyan animate-pulse" />
+                  <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-primary animate-pulse" />
                 )}
               </Link>
 
               <Link
                 href="/log"
-                className="p-2 rounded-xl bg-dark-bg/80 shadow-neu-raised hover:text-accent-cyan text-gray-300 border border-white/5 transition-all active:shadow-neu-pressed"
+                className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-text-primary border border-slate-200 transition-all active:scale-95"
                 title="View Activity History & Workout Logs"
               >
-                <BookOpen className="w-3.5 h-3.5 text-accent-cyan" />
+                <BookOpen className="w-3.5 h-3.5 text-primary" />
               </Link>
 
               <Link
                 href="/analytics"
-                className="p-2 rounded-xl bg-dark-bg/80 shadow-neu-raised hover:text-accent-cyan text-gray-300 border border-white/5 transition-all active:shadow-neu-pressed"
+                className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-text-primary border border-slate-200 transition-all active:scale-95"
                 title="View Visual Analytics & Progress Charts"
               >
-                <BarChart3 className="w-3.5 h-3.5 text-accent-cyan" />
+                <BarChart3 className="w-3.5 h-3.5 text-primary" />
               </Link>
 
               <Link
                 href="/rewards"
-                className="p-2 rounded-xl bg-dark-bg/80 shadow-neu-raised hover:text-accent-cyan text-gray-300 border border-white/5 transition-all active:shadow-neu-pressed"
+                className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-text-primary border border-slate-200 transition-all active:scale-95"
                 title="View System Rewards & Milestones"
               >
-                <Trophy className="w-3.5 h-3.5 text-amber-400" />
+                <Trophy className="w-3.5 h-3.5 text-amber-500" />
               </Link>
 
               {(data.streak || 0) > 0 && (
-                <div className="flex items-center space-x-1 px-2 py-1 rounded-xl bg-dark-bg/80 shadow-neu-pressed border border-white/5 text-[11px] font-mono text-amber-400">
-                  <Flame className="w-3.5 h-3.5 fill-amber-400" />
+                <div className="flex items-center space-x-1 px-2 py-1 rounded-xl bg-amber-50 border border-amber-200 text-[11px] font-mono text-amber-700 font-bold">
+                  <Flame className="w-3.5 h-3.5 fill-amber-500 text-amber-500" />
                   <span>{data.streak}d</span>
                 </div>
               )}
 
-              <div className="w-14 h-14 rounded-full bg-dark-bg shadow-neu-pressed border border-accent-cyan/30 flex flex-col items-center justify-center text-center relative overflow-hidden">
-                <div className="absolute inset-0 bg-accent-cyan/5 rounded-full blur-[2px]" />
-                <span className="text-[9px] font-mono uppercase text-dark-muted font-bold tracking-wider">
+              <div className="w-12 h-12 rounded-2xl bg-indigo-50 border border-indigo-200 flex flex-col items-center justify-center text-center shadow-sm">
+                <span className="text-[8px] font-mono uppercase text-text-muted font-bold tracking-wider">
                   LVL
                 </span>
-                <span className="text-lg font-mono font-black text-accent-cyan leading-none drop-shadow-[0_0_8px_rgba(79,172,254,0.5)]">
+                <span className="text-base font-mono font-black text-primary leading-none">
                   {data.level || 0}
                 </span>
               </div>
@@ -439,136 +375,142 @@ export default function HomePage() {
         </GlassCard>
 
         {/* CARD 2: EXP PROGRESS */}
-        <GlassCard className="py-4 px-5 space-y-2.5">
+        <GlassCard className="py-4 px-4 space-y-2">
           <div className="flex items-center justify-between text-xs font-mono">
-            <span className="text-gray-300 font-semibold tracking-wide">
+            <span className="text-text-primary font-semibold tracking-wide">
               EXP {data.exp || 0} / {requiredExp}
             </span>
-            <span className="text-accent-cyan font-bold">
+            <span className="text-primary font-bold">
               Next: +{nextDelta}
             </span>
           </div>
 
           <ExpBar
             current={data.exp || 0}
-            max={requiredExp || 10}
+            max={requiredExp}
             showLabels={false}
           />
         </GlassCard>
 
-        {/* CARD 3: DAILY QUESTS LIST */}
-        <GlassCard className="py-4 px-5 space-y-3">
-          <div className="flex items-center justify-between pb-1 border-b border-white/5">
+        {/* CARD 3: DAILY QUESTS */}
+        <GlassCard className="py-4 px-4 space-y-3">
+          <div className="flex items-center justify-between pb-1 border-b border-slate-100">
             <div className="flex items-center space-x-2">
-              <Award className="w-4 h-4 text-accent-cyan" />
-              <span className="text-xs font-bold text-white uppercase tracking-wider">
+              <Award className="w-4 h-4 text-primary" />
+              <h2 className="text-xs font-bold font-mono text-text-primary uppercase tracking-wider">
                 Daily Quests
-              </span>
+              </h2>
             </div>
-            <span className="text-[11px] font-mono text-dark-muted">
-              {data.huntClaimedToday ? "Claimed for Today" : `${completedCount} / 4 Completed`}
+            <span className="text-[10px] font-mono text-text-muted">
+              {data.huntClaimedToday
+                ? "Claimed for Today"
+                : `${completedCount} / 4 Completed`}
             </span>
           </div>
 
-          {/* Space-y-3 of 4 NeumorphicButtons */}
-          <div className="space-y-3">
+          <div className="space-y-2.5">
             {tier?.exercises?.map((exercise) => {
-              const isCompleted = !!data.dailyProgress?.[exercise.key];
-              const expLabel = `+${expPerQuest.toFixed(1).replace(/\.0$/, "")} EXP`;
+              const isDone = !!data.dailyProgress?.[exercise.key];
+              const expPerQuest = Math.round((tier.expReward / 4) * 10) / 10;
+              const durationSec = data.dailyDurations?.[exercise.key] || 0;
 
               return (
-                <NeumorphicButton
-                  key={exercise.key}
-                  title={exercise.name}
-                  subtitle={`Target: ${exercise.target} ${exercise.unit} • ${exercise.category}`}
-                  badge={expLabel}
-                  isCompleted={isCompleted}
-                  disabled={data.huntClaimedToday}
-                  onClick={() => {
-                    if (data.huntClaimedToday) return;
-                    setActiveTimerQuest({
-                      ...exercise,
-                      badge: expLabel,
-                      isCompleted,
-                    });
-                  }}
-                />
+                <div key={exercise.key} className="space-y-1">
+                  <NeumorphicButton
+                    title={exercise.name}
+                    subtitle={`Target: ${exercise.target} ${exercise.unit} • ${exercise.category}`}
+                    badge={`+${expPerQuest} EXP`}
+                    isCompleted={isDone}
+                    onClick={() => toggleQuest(exercise.key)}
+                  />
+
+                  {/* Workout Timer trigger row */}
+                  <div className="flex items-center justify-between px-2 text-[10px] font-mono">
+                    <button
+                      type="button"
+                      onClick={() => setActiveTimerQuest(exercise)}
+                      className="text-primary font-semibold hover:underline flex items-center gap-1 py-0.5"
+                    >
+                      <Clock className="w-3 h-3" />
+                      <span>{durationSec > 0 ? `Tracked: ${Math.floor(durationSec / 60)}m ${durationSec % 60}s (Retake)` : "Open Workout Timer →"}</span>
+                    </button>
+
+                    {durationSec > 0 && (
+                      <span className="text-emerald-600 font-bold">
+                        ✓ Recorded
+                      </span>
+                    )}
+                  </div>
+                </div>
               );
             })}
           </div>
         </GlassCard>
 
-        {/* CARD 4: COMPLETE HUNT ACTION */}
-        <div>
-          <motion.button
-            whileTap={{ scale: 0.95 }}
-            transition={{ type: "spring", stiffness: 400, damping: 25 }}
-            onClick={handleCompleteHunt}
-            disabled={isClaiming || data.huntClaimedToday || completedCount === 0}
-            className={`w-full py-5 rounded-2xl font-black text-base tracking-wider uppercase flex items-center justify-center gap-2 transition-all duration-200 border ${
-              data.huntClaimedToday
-                ? "bg-dark-card/80 text-gray-400 border-white/5 shadow-neu-pressed cursor-not-allowed opacity-80"
-                : completedCount === 0
-                ? "bg-dark-card text-gray-500 border-white/5 shadow-neu-raised cursor-not-allowed opacity-60"
-                : "bg-gradient-to-r from-blue-600 via-accent-cyan to-blue-500 shadow-glow-cyan text-white border-white/20 active:opacity-90 cursor-pointer"
+        {/* Feedback Alert */}
+        {huntFeedback && (
+          <div
+            className={`p-3 rounded-2xl text-xs font-mono text-center border shadow-sm ${
+              huntFeedback.type === "success"
+                ? "bg-emerald-50 text-emerald-800 border-emerald-200"
+                : "bg-rose-50 text-rose-800 border-rose-200"
             }`}
           >
-            {isClaiming ? (
-              <div className="flex items-center justify-center gap-2">
-                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                <span>Recording Hunt...</span>
-              </div>
-            ) : data.huntClaimedToday ? (
-              <>
-                <Lock className="w-5 h-5 text-accent-cyan" />
-                Hunt Claimed (Resets Tomorrow)
-              </>
-            ) : (
-              <>
-                <Swords className="w-5 h-5" />
-                {completedCount === 0 ? "Complete 1+ Quests" : "Complete Hunt"}
-              </>
-            )}
-          </motion.button>
+            {huntFeedback.message}
+          </div>
+        )}
 
-          {/* Feedback Toast */}
-          <AnimatePresence>
-            {huntFeedback && (
-              <motion.p
-                initial={{ opacity: 0, y: 5 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 5 }}
-                className={`text-center text-xs font-mono mt-2 font-semibold ${
-                  huntFeedback.type === "warning" ? "text-amber-400" : "text-accent-cyan"
-                }`}
-              >
-                {huntFeedback.text}
-              </motion.p>
-            )}
-          </AnimatePresence>
-        </div>
+        {/* CARD 4: CLAIM ACTION BUTTON */}
+        <motion.button
+          whileTap={isClaimLocked ? undefined : { scale: 0.97 }}
+          onClick={handleClaimHunt}
+          disabled={isClaimLocked || isClaiming}
+          className={`w-full py-4 rounded-2xl font-bold font-mono text-xs uppercase tracking-wider flex items-center justify-center space-x-2 transition-all duration-300 ${
+            data.huntClaimedToday
+              ? "bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed shadow-none"
+              : isClaimLocked
+              ? "bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed opacity-60 shadow-none"
+              : "bg-gradient-to-r from-primary to-secondary text-white shadow-glow-primary hover:opacity-95 active:opacity-90 cursor-pointer border border-primary/20"
+          }`}
+        >
+          {isClaiming ? (
+            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+          ) : data.huntClaimedToday ? (
+            <>
+              <Lock className="w-4 h-4 text-slate-400" />
+              <span>Hunt Claimed (Resets Tomorrow)</span>
+            </>
+          ) : isClaimLocked ? (
+            <>
+              <Lock className="w-4 h-4 text-slate-400" />
+              <span>Complete 1+ Quest to Claim</span>
+            </>
+          ) : (
+            <>
+              <Swords className="w-4 h-4 text-white" />
+              <span>Claim Quest Reward</span>
+            </>
+          )}
+        </motion.button>
       </div>
 
-      {/* FULL-SCREEN LEVEL UP MODAL */}
+      {/* Full-screen Exercise Workout Timer Modal */}
+      {activeTimerQuest && (
+        <WorkoutTimer
+          exercise={activeTimerQuest}
+          isOpen={!!activeTimerQuest}
+          onClose={() => setActiveTimerQuest(null)}
+          onComplete={handleCompleteTimerQuest}
+        />
+      )}
+
+      {/* Level Up Celebration Modal */}
       <LevelUpModal
         isOpen={showLevelUp}
-        onClose={() => {
-          setShowLevelUp(false);
-          refreshHunter();
-        }}
+        onClose={() => setShowLevelUp(false)}
         oldLevel={levelUpData.oldLevel}
         newLevel={levelUpData.newLevel}
         statPointsEarned={levelUpData.statPointsEarned}
-      />
-
-      {/* FULL-SCREEN WORKOUT TIMER MODAL */}
-      <WorkoutTimer
-        isOpen={!!activeTimerQuest}
-        onClose={() => setActiveTimerQuest(null)}
-        exercise={activeTimerQuest}
-        isCompleted={!!data.dailyProgress?.[activeTimerQuest?.key]}
-        initialDuration={data.dailyDurations?.[activeTimerQuest?.key] || 0}
-        onComplete={handleCompleteTimerQuest}
       />
     </motion.div>
   );

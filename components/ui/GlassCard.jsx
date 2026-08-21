@@ -4,8 +4,8 @@ import React from "react";
 import { motion } from "framer-motion";
 
 /**
- * GlassCard component combining translucent glassmorphism with dark system neumorphism.
- * Designed with generous p-5 padding for mobile touch comfort.
+ * Modern elevated Surface Card component for the Solo Clear Light & Indigo theme.
+ * Features crisp white surface, soft ambient elevation shadow, and optional glowing accents.
  */
 export function GlassCard({
   children,
@@ -15,19 +15,24 @@ export function GlassCard({
 }) {
   return (
     <motion.div
-      className={`relative rounded-2xl bg-dark-card/80 backdrop-blur-xl border border-white/[0.07] p-5 shadow-neu-raised overflow-hidden transition-all duration-300 ${className}`}
+      className={`relative rounded-2xl bg-white/95 backdrop-blur-md border ${
+        glow
+          ? "border-primary/40 shadow-glow-primary"
+          : "border-slate-200/80 shadow-card"
+      } p-5 overflow-hidden transition-all duration-300 ${className}`}
       {...props}
     >
       {/* Optional ambient corner glow inside card */}
       {glow && (
         <div
-          className="absolute -top-10 -right-10 w-32 h-32 rounded-full bg-accent-cyan/15 blur-2xl pointer-events-none"
+          className="absolute -top-10 -right-10 w-32 h-32 rounded-full bg-primary/10 blur-2xl pointer-events-none"
           aria-hidden="true"
         />
       )}
-      <div className="relative z-10">{children}</div>
+      <div className="relative z-10 text-text-primary">{children}</div>
     </motion.div>
   );
 }
 
+export const Card = GlassCard;
 export default GlassCard;

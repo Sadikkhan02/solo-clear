@@ -29,7 +29,7 @@ const StatRadarChart = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="w-full h-56 rounded-2xl bg-dark-card/50 border border-white/5 animate-pulse flex items-center justify-center text-xs font-mono text-gray-500">
+      <div className="w-full h-56 rounded-2xl bg-slate-100 border border-slate-200 animate-pulse flex items-center justify-center text-xs font-mono text-text-muted">
         Calibrating Attribute Radar...
       </div>
     ),
@@ -45,7 +45,7 @@ const MILESTONES = [
     description: "Awakened as a Hunter with baseline System access.",
     rewardText: "Awakened Title",
     bonusPoints: 0,
-    badgeClass: "bg-gray-800 text-gray-300 border-gray-700",
+    badgeClass: "bg-slate-100 text-slate-700 border-slate-200",
   },
   {
     id: "d-rank",
@@ -55,7 +55,7 @@ const MILESTONES = [
     description: "Proven physical endurance across intermediate gates.",
     rewardText: "+5 Stat Points",
     bonusPoints: 5,
-    badgeClass: "bg-emerald-950/80 text-emerald-300 border-emerald-800/50",
+    badgeClass: "bg-emerald-50 text-emerald-700 border-emerald-200",
   },
   {
     id: "c-rank",
@@ -65,7 +65,7 @@ const MILESTONES = [
     description: "Mastery of combat pace and advanced gate thresholds.",
     rewardText: "+10 Stat Points",
     bonusPoints: 10,
-    badgeClass: "bg-cyan-950/80 text-cyan-300 border-cyan-800/50",
+    badgeClass: "bg-indigo-50 text-primary border-indigo-200",
   },
   {
     id: "b-rank",
@@ -75,7 +75,7 @@ const MILESTONES = [
     description: "Ascend beyond human limits into Monarch realm.",
     rewardText: "+15 Stat Points",
     bonusPoints: 15,
-    badgeClass: "bg-purple-950/80 text-purple-300 border-purple-800/50",
+    badgeClass: "bg-purple-50 text-secondary border-purple-200",
   },
 ];
 
@@ -149,8 +149,8 @@ export default function RewardsPage() {
   if (authLoading || !hunter?.email) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center min-h-[80vh] space-y-3 select-none">
-        <div className="w-10 h-10 rounded-full border-2 border-accent-cyan border-t-transparent animate-spin" />
-        <p className="text-xs font-mono text-gray-400 tracking-widest uppercase">
+        <div className="w-10 h-10 rounded-full border-3 border-primary border-t-transparent animate-spin" />
+        <p className="text-xs font-mono text-text-muted tracking-widest uppercase">
           SYNCING SYSTEM REWARDS...
         </p>
       </div>
@@ -169,7 +169,7 @@ export default function RewardsPage() {
       <div className="flex items-center justify-between pt-1">
         <Link
           href="/"
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-dark-card shadow-neu-raised text-gray-300 text-xs font-mono font-bold hover:text-accent-cyan border border-white/5 active:shadow-neu-pressed transition-all"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white shadow-sm text-text-secondary text-xs font-mono font-bold hover:text-primary border border-slate-200 active:scale-95 transition-all"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
           <span>Dashboard</span>
@@ -178,7 +178,7 @@ export default function RewardsPage() {
         <div className="flex items-center gap-2">
           <span
             className={`text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-full border tracking-widest uppercase ${
-              tier?.badgeClass || "bg-gray-800 text-gray-300 border-gray-700"
+              tier?.badgeClass || "bg-slate-100 text-slate-700 border-slate-200"
             }`}
           >
             {tier?.rank || "E-Rank"} • LVL {currentLevel}
@@ -188,93 +188,93 @@ export default function RewardsPage() {
 
       {/* Page Title */}
       <div>
-        <span className="text-[9px] font-mono font-bold tracking-widest uppercase text-dark-muted">
+        <span className="text-[9px] font-mono font-bold tracking-widest uppercase text-text-muted">
           ARSENAL & RECOGNITION
         </span>
-        <h1 className="text-2xl font-black text-white tracking-tight flex items-center gap-2">
+        <h1 className="text-2xl font-black text-text-primary tracking-tight flex items-center gap-2">
           System Rewards
-          <Trophy className="w-5 h-5 text-amber-400" />
+          <Trophy className="w-5 h-5 text-amber-500" />
         </h1>
       </div>
 
       {/* 4-Card Summary Grid */}
       <div className="grid grid-cols-2 gap-2.5">
-        <GlassCard className="py-3 px-3.5 space-y-1">
-          <div className="flex items-center justify-between text-dark-muted text-[10px] font-mono">
+        <GlassCard className="py-3 px-3.5 space-y-1 bg-white">
+          <div className="flex items-center justify-between text-text-muted text-[10px] font-mono">
             <span>LEVEL PROGRESS</span>
-            <Zap className="w-3.5 h-3.5 text-accent-cyan" />
+            <Zap className="w-3.5 h-3.5 text-primary" />
           </div>
-          <p className="text-lg font-black font-mono text-white">
-            LVL {currentLevel} <span className="text-xs text-dark-muted">({tier?.rankLetter}-Rank)</span>
+          <p className="text-lg font-black font-mono text-text-primary">
+            LVL {currentLevel} <span className="text-xs text-text-muted">({tier?.rankLetter}-Rank)</span>
           </p>
         </GlassCard>
 
-        <GlassCard className="py-3 px-3.5 space-y-1">
-          <div className="flex items-center justify-between text-dark-muted text-[10px] font-mono">
+        <GlassCard className="py-3 px-3.5 space-y-1 bg-white">
+          <div className="flex items-center justify-between text-text-muted text-[10px] font-mono">
             <span>AVAILABLE STATS</span>
-            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+            <Sparkles className="w-3.5 h-3.5 text-primary" />
           </div>
-          <p className="text-lg font-black font-mono text-amber-400">
-            {hunter?.statPoints || 0} <span className="text-xs text-dark-muted">pts</span>
+          <p className="text-lg font-black font-mono text-primary">
+            {hunter?.statPoints || 0} <span className="text-xs text-text-muted">pts</span>
           </p>
         </GlassCard>
 
-        <GlassCard className="py-3 px-3.5 space-y-1">
-          <div className="flex items-center justify-between text-dark-muted text-[10px] font-mono">
+        <GlassCard className="py-3 px-3.5 space-y-1 bg-white">
+          <div className="flex items-center justify-between text-text-muted text-[10px] font-mono">
             <span>ALLOCATED STATS</span>
-            <Award className="w-3.5 h-3.5 text-emerald-400" />
+            <Award className="w-3.5 h-3.5 text-emerald-600" />
           </div>
-          <p className="text-lg font-black font-mono text-emerald-400">
-            {allocatedStats} <span className="text-xs text-dark-muted">total</span>
+          <p className="text-lg font-black font-mono text-emerald-600">
+            {allocatedStats} <span className="text-xs text-text-muted">total</span>
           </p>
         </GlassCard>
 
-        <GlassCard className="py-3 px-3.5 space-y-1">
-          <div className="flex items-center justify-between text-dark-muted text-[10px] font-mono">
+        <GlassCard className="py-3 px-3.5 space-y-1 bg-white">
+          <div className="flex items-center justify-between text-text-muted text-[10px] font-mono">
             <span>DAILY STREAK</span>
-            <Flame className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
+            <Flame className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
           </div>
-          <p className="text-lg font-black font-mono text-amber-400">
-            {hunter?.streak || 0} <span className="text-xs text-dark-muted">days</span>
+          <p className="text-lg font-black font-mono text-amber-600">
+            {hunter?.streak || 0} <span className="text-xs text-text-muted">days</span>
           </p>
         </GlassCard>
       </div>
 
       {/* Next Level Reward Preview Card */}
-      <GlassCard glow={true} className="py-4 px-4 space-y-3 border-accent-cyan/30 relative overflow-hidden">
-        <div className="flex items-center justify-between pb-1 border-b border-white/5">
+      <GlassCard glow={true} className="py-4 px-4 space-y-3 border-primary/30 relative overflow-hidden bg-white">
+        <div className="flex items-center justify-between pb-1 border-b border-slate-100">
           <div className="flex items-center gap-1.5">
-            <Gift className="w-4 h-4 text-accent-cyan" />
-            <span className="text-xs font-bold font-mono text-white uppercase tracking-wider">
+            <Gift className="w-4 h-4 text-primary" />
+            <span className="text-xs font-bold font-mono text-text-primary uppercase tracking-wider">
               Next Reward Preview (LVL {nextLevel})
             </span>
           </div>
-          <span className="text-[10px] font-mono text-accent-cyan">
+          <span className="text-[10px] font-mono text-primary font-bold">
             +{expRemaining} EXP to Unlock
           </span>
         </div>
 
         <div className="grid grid-cols-2 gap-3 pt-1">
-          <div className="p-3 rounded-2xl bg-dark-bg/90 border border-white/5 shadow-neu-pressed space-y-1">
-            <span className="text-[10px] font-mono text-dark-muted block uppercase font-bold">
+          <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200 shadow-sm space-y-1">
+            <span className="text-[10px] font-mono text-text-muted block uppercase font-bold">
               Guaranteed Points
             </span>
-            <span className="text-lg font-black font-mono text-accent-cyan block">
+            <span className="text-lg font-black font-mono text-primary block">
               +3 Stat Points
             </span>
-            <span className="text-[10px] text-gray-400 block">
-              Directly allocatable to STR/VIT/AGI
+            <span className="text-[10px] text-text-secondary block">
+              Directly allocatable to STR/VIT/AGI/CON
             </span>
           </div>
 
-          <div className="p-3 rounded-2xl bg-dark-bg/90 border border-white/5 shadow-neu-pressed space-y-1">
-            <span className="text-[10px] font-mono text-dark-muted block uppercase font-bold">
+          <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200 shadow-sm space-y-1">
+            <span className="text-[10px] font-mono text-text-muted block uppercase font-bold">
               Combat Scaling
             </span>
-            <span className="text-lg font-black font-mono text-purple-400 block">
+            <span className="text-lg font-black font-mono text-secondary block">
               Higher EXP
             </span>
-            <span className="text-[10px] text-gray-400 block">
+            <span className="text-[10px] text-text-secondary block">
               Scaled quest rewards & gate limits
             </span>
           </div>
@@ -288,12 +288,12 @@ export default function RewardsPage() {
       <div className="space-y-3 pt-1">
         <div className="flex items-center justify-between px-1">
           <div className="flex items-center gap-2">
-            <ShieldCheck className="w-4 h-4 text-accent-cyan" />
-            <h2 className="text-xs font-bold font-mono text-white uppercase tracking-wider">
+            <ShieldCheck className="w-4 h-4 text-primary" />
+            <h2 className="text-xs font-bold font-mono text-text-primary uppercase tracking-wider">
               Rank Milestone Arsenal
             </h2>
           </div>
-          <span className="text-[10px] font-mono text-dark-muted">
+          <span className="text-[10px] font-mono text-text-muted">
             {claimedList.length} / {MILESTONES.length} Claimed
           </span>
         </div>

@@ -8,16 +8,16 @@ export const viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-  themeColor: "#0a0a0f",
+  themeColor: "#f0f4f8",
 };
 
 export const metadata = {
   title: "Solo Clear | System Quest",
-  description: "Mobile-first Solo Leveling fitness system.",
+  description: "Gamified Solo Leveling fitness system.",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
-    statusBarStyle: "black-translucent",
+    statusBarStyle: "default",
     title: "SoloClear",
   },
   icons: {
@@ -28,8 +28,8 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" className="dark">
-      <body className="bg-dark-bg text-gray-100 antialiased min-h-screen relative overflow-x-hidden selection:bg-accent-cyan/30 selection:text-white">
+    <html lang="en">
+      <body className="bg-background text-text-primary font-sans antialiased min-h-screen relative overflow-x-hidden">
         <AuthProvider>
           <NotificationProvider>
             {/* Global Slide-down Floating Notification Banners */}
@@ -37,13 +37,13 @@ export default function RootLayout({ children }) {
 
             {/* Atmospheric Glow Orb - Top Right */}
             <div
-              className="fixed -top-12 -right-12 w-48 h-48 rounded-full bg-accent-cyan/25 blur-3xl pointer-events-none -z-10"
+              className="fixed -top-16 -right-16 w-64 h-64 rounded-full bg-primary/10 blur-3xl pointer-events-none -z-10"
               aria-hidden="true"
             />
 
             {/* Atmospheric Glow Orb - Bottom Left */}
             <div
-              className="fixed -bottom-12 -left-12 w-48 h-48 rounded-full bg-purple-600/20 blur-3xl pointer-events-none -z-10"
+              className="fixed -bottom-16 -left-16 w-64 h-64 rounded-full bg-secondary/10 blur-3xl pointer-events-none -z-10"
               aria-hidden="true"
             />
 

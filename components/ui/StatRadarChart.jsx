@@ -19,10 +19,10 @@ function CustomRadarTooltip({ active, payload }) {
   if (active && payload && payload.length) {
     const data = payload[0].payload;
     return (
-      <div className="rounded-xl bg-[#0e111a]/95 backdrop-blur-xl border border-accent-cyan/40 p-2.5 shadow-2xl text-xs font-mono select-none">
-        <p className="text-gray-300 font-bold">{data.subject}</p>
-        <p className="text-accent-cyan font-black text-sm">
-          Value: {data.stat} <span className="text-gray-400 font-normal text-xs">pts</span>
+      <div className="rounded-xl bg-white/95 backdrop-blur-md border border-primary/40 p-2.5 shadow-lg text-xs font-mono select-none">
+        <p className="text-text-primary font-bold">{data.fullSubject || data.subject}</p>
+        <p className="text-primary font-black text-sm">
+          Value: {data.stat} <span className="text-text-muted font-normal text-xs">pts</span>
         </p>
       </div>
     );
@@ -55,16 +55,16 @@ export function StatRadarChart({ stats = { str: 0, vit: 0, agi: 0, con: 0 }, sta
   else if (agi > str && agi > vit && agi > con) archetype = "Speed Assassin";
 
   return (
-    <GlassCard className="py-4 px-4 space-y-3.5 select-none relative overflow-hidden">
+    <GlassCard className="py-4 px-4 space-y-3.5 select-none relative overflow-hidden bg-white">
       {/* Header */}
-      <div className="flex items-center justify-between pb-1 border-b border-white/5">
+      <div className="flex items-center justify-between pb-1 border-b border-slate-100">
         <div className="flex items-center gap-1.5">
-          <Sliders className="w-4 h-4 text-accent-cyan" />
-          <span className="text-xs font-bold font-mono text-white uppercase tracking-wider">
+          <Sliders className="w-4 h-4 text-primary" />
+          <span className="text-xs font-bold font-mono text-text-primary uppercase tracking-wider">
             Attribute Calibration
           </span>
         </div>
-        <span className="text-[10px] font-mono text-accent-cyan font-bold">
+        <span className="text-[10px] font-mono text-primary font-bold">
           {archetype}
         </span>
       </div>
@@ -73,29 +73,29 @@ export function StatRadarChart({ stats = { str: 0, vit: 0, agi: 0, con: 0 }, sta
       <div className="w-full h-56 -my-2 flex items-center justify-center">
         <ResponsiveContainer width="100%" height="100%">
           <RadarChart cx="50%" cy="50%" outerRadius="70%" data={radarData}>
-            <PolarGrid stroke="rgba(255, 255, 255, 0.08)" strokeDasharray="3 3" />
+            <PolarGrid stroke="rgba(0, 0, 0, 0.08)" strokeDasharray="3 3" />
             <PolarAngleAxis
               dataKey="subject"
-              tick={{ fill: "#4facfe", fontSize: 11, fontFamily: "monospace", fontWeight: "bold" }}
+              tick={{ fill: "#6366f1", fontSize: 11, fontFamily: "monospace", fontWeight: "bold" }}
             />
             <PolarRadiusAxis
               angle={90}
               domain={[0, maxVal]}
-              tick={{ fill: "#6b7280", fontSize: 9, fontFamily: "monospace" }}
+              tick={{ fill: "#8a8a9e", fontSize: 9, fontFamily: "monospace" }}
               axisLine={false}
             />
             <Tooltip content={<CustomRadarTooltip />} />
             <Radar
               name="Hunter Stats"
               dataKey="stat"
-              stroke="#4facfe"
+              stroke="#6366f1"
               strokeWidth={2}
-              fill="#4facfe"
-              fillOpacity={0.4}
+              fill="#6366f1"
+              fillOpacity={0.25}
               dot={{
                 r: 4,
-                fill: "#0e111a",
-                stroke: "#4facfe",
+                fill: "#ffffff",
+                stroke: "#6366f1",
                 strokeWidth: 2,
               }}
             />
@@ -105,21 +105,21 @@ export function StatRadarChart({ stats = { str: 0, vit: 0, agi: 0, con: 0 }, sta
 
       {/* 4 Stat Value Chips */}
       <div className="grid grid-cols-4 gap-1.5 text-center pt-1">
-        <div className="p-2 rounded-xl bg-dark-bg/80 border border-red-500/20 shadow-neu-pressed">
-          <span className="text-[9px] font-mono text-red-400 block font-bold">STR</span>
-          <span className="text-sm font-black font-mono text-white">{str}</span>
+        <div className="p-2 rounded-xl bg-rose-50 border border-rose-200 shadow-sm">
+          <span className="text-[9px] font-mono text-rose-600 block font-bold">STR</span>
+          <span className="text-sm font-black font-mono text-text-primary">{str}</span>
         </div>
-        <div className="p-2 rounded-xl bg-dark-bg/80 border border-cyan-500/20 shadow-neu-pressed">
-          <span className="text-[9px] font-mono text-cyan-400 block font-bold">AGI</span>
-          <span className="text-sm font-black font-mono text-white">{agi}</span>
+        <div className="p-2 rounded-xl bg-indigo-50 border border-indigo-200 shadow-sm">
+          <span className="text-[9px] font-mono text-indigo-600 block font-bold">AGI</span>
+          <span className="text-sm font-black font-mono text-text-primary">{agi}</span>
         </div>
-        <div className="p-2 rounded-xl bg-dark-bg/80 border border-emerald-500/20 shadow-neu-pressed">
-          <span className="text-[9px] font-mono text-emerald-400 block font-bold">VIT</span>
-          <span className="text-sm font-black font-mono text-white">{vit}</span>
+        <div className="p-2 rounded-xl bg-emerald-50 border border-emerald-200 shadow-sm">
+          <span className="text-[9px] font-mono text-emerald-600 block font-bold">VIT</span>
+          <span className="text-sm font-black font-mono text-text-primary">{vit}</span>
         </div>
-        <div className="p-2 rounded-xl bg-dark-bg/80 border border-amber-500/20 shadow-neu-pressed">
-          <span className="text-[9px] font-mono text-amber-400 block font-bold">CON</span>
-          <span className="text-sm font-black font-mono text-white">{con}</span>
+        <div className="p-2 rounded-xl bg-amber-50 border border-amber-200 shadow-sm">
+          <span className="text-[9px] font-mono text-amber-600 block font-bold">CON</span>
+          <span className="text-sm font-black font-mono text-text-primary">{con}</span>
         </div>
       </div>
 
@@ -127,14 +127,14 @@ export function StatRadarChart({ stats = { str: 0, vit: 0, agi: 0, con: 0 }, sta
       <div className="pt-1">
         <Link
           href="/status"
-          className={`w-full py-3 px-4 rounded-xl border flex items-center justify-between text-xs font-mono font-bold transition-all shadow-neu-raised ${
+          className={`w-full py-3 px-4 rounded-xl border flex items-center justify-between text-xs font-mono font-bold transition-all shadow-sm ${
             statPoints > 0
-              ? "bg-accent-cyan/15 border-accent-cyan/40 text-accent-cyan hover:bg-accent-cyan/25 shadow-glow-cyan"
-              : "bg-dark-bg/80 border-white/5 text-gray-300 hover:text-accent-cyan"
+              ? "bg-indigo-50 border-primary/40 text-primary hover:bg-indigo-100 shadow-glow-primary"
+              : "bg-white border-slate-200 text-text-secondary hover:text-primary"
           }`}
         >
           <span className="flex items-center gap-1.5">
-            <Sparkles className="w-3.5 h-3.5 text-accent-cyan" />
+            <Sparkles className="w-3.5 h-3.5 text-primary" />
             {statPoints > 0 ? `${statPoints} Stat Points Available` : "Calibrate Attributes"}
           </span>
           <ArrowRight className="w-4 h-4" />

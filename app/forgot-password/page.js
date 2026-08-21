@@ -49,30 +49,30 @@ export default function ForgotPasswordPage() {
     >
       {/* Header */}
       <div className="text-center space-y-2">
-        <div className="inline-block px-4 py-1 mx-auto rounded-full bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs font-mono tracking-widest uppercase">
+        <div className="inline-block px-4 py-1 mx-auto rounded-full bg-rose-50 border border-rose-200 text-rose-600 text-xs font-mono tracking-widest uppercase font-bold">
           SYSTEM RECOVERY
         </div>
-        <h1 className="text-3xl font-bold text-white tracking-wide">Recover Password</h1>
-        <p className="text-white/40 text-sm max-w-[280px] mx-auto leading-relaxed">
+        <h1 className="text-3xl font-black text-text-primary tracking-tight">Recover Password</h1>
+        <p className="text-text-secondary text-sm max-w-[280px] mx-auto leading-relaxed">
           Enter your registered hunter email to receive a password reset link.
         </p>
       </div>
 
       {isSent ? (
-        <GlassCard className="text-center py-8 px-6 space-y-4">
-          <div className="w-16 h-16 mx-auto rounded-full bg-accent-cyan/10 border border-accent-cyan/30 flex items-center justify-center text-accent-cyan">
+        <GlassCard className="text-center py-8 px-6 space-y-4 bg-white">
+          <div className="w-16 h-16 mx-auto rounded-full bg-indigo-50 border border-indigo-200 flex items-center justify-center text-primary">
             <CheckCircle2 className="w-8 h-8" />
           </div>
-          <h2 className="text-xl font-bold text-white font-mono">Recovery Link Sent</h2>
-          <p className="text-xs text-gray-300 leading-relaxed max-w-[280px] mx-auto">
-            If an awakened hunter account exists for <span className="text-accent-cyan font-mono">{email}</span>, a password reset link has been dispatched to your inbox.
+          <h2 className="text-xl font-bold text-text-primary font-mono">Recovery Link Sent</h2>
+          <p className="text-xs text-text-secondary leading-relaxed max-w-[280px] mx-auto">
+            If an awakened hunter account exists for <span className="text-primary font-mono font-bold">{email}</span>, a password reset link has been dispatched to your inbox.
           </p>
           <div className="pt-3">
             <Link
               href="/login"
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-dark-card shadow-neu-raised text-white text-xs font-mono font-bold hover:text-accent-cyan transition-colors"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-white shadow-sm border border-slate-200 text-text-primary text-xs font-mono font-bold hover:border-primary transition-all active:scale-95"
             >
-              <ArrowLeft className="w-4 h-4" />
+              <ArrowLeft className="w-4 h-4 text-primary" />
               Return to Login
             </Link>
           </div>
@@ -80,27 +80,25 @@ export default function ForgotPasswordPage() {
       ) : (
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Email Input Card */}
-          <GlassCard className="p-0 overflow-hidden">
-            <div className="flex items-center gap-3 px-4 bg-dark-card/30">
-              <Mail className="w-5 h-5 text-white/40 flex-shrink-0" />
-              <input
-                type="email"
-                placeholder="Hunter Email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full py-4 bg-transparent text-white placeholder-white/30 outline-none min-h-[56px] text-sm"
-                required
-                autoComplete="email"
-              />
-            </div>
-          </GlassCard>
+          <div className="rounded-2xl border border-slate-200/90 bg-white shadow-sm overflow-hidden flex items-center px-4">
+            <Mail className="w-5 h-5 text-slate-400 flex-shrink-0 mr-3" />
+            <input
+              type="email"
+              placeholder="Hunter Email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full py-4 bg-transparent text-text-primary placeholder-slate-400 outline-none min-h-[56px] text-sm"
+              required
+              autoComplete="email"
+            />
+          </div>
 
           {/* Error Message */}
           {error && (
             <motion.div
               initial={{ opacity: 0, y: -8 }}
               animate={{ opacity: 1, y: 0 }}
-              className="px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-sm flex items-center gap-2"
+              className="px-4 py-3 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-sm flex items-center gap-2"
             >
               <span>⚠️</span>
               <span>{error}</span>
@@ -111,7 +109,7 @@ export default function ForgotPasswordPage() {
           <NeumorphicButton
             type="submit"
             disabled={isSubmitting || !email}
-            className="w-full justify-center text-center text-white font-bold bg-gradient-to-r from-rose-600 to-rose-500 shadow-glow-cyan hover:shadow-2xl transition-all disabled:opacity-50"
+            className="w-full justify-center text-center text-white font-bold bg-gradient-to-r from-rose-600 to-rose-500 shadow-md hover:opacity-95 transition-all disabled:opacity-50 border-none py-4 text-sm"
           >
             {isSubmitting ? (
               <div className="flex items-center justify-center gap-3">
@@ -132,7 +130,7 @@ export default function ForgotPasswordPage() {
       <div className="text-center pt-2">
         <Link
           href="/login"
-          className="text-sm text-white/40 hover:text-accent-cyan transition-colors inline-flex items-center gap-1.5"
+          className="text-sm text-text-secondary hover:text-primary transition-colors inline-flex items-center gap-1.5"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
           <span>Back to Hunter Login</span>

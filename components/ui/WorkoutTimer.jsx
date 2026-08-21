@@ -85,7 +85,7 @@ export function WorkoutTimer({
         onComplete(exercise.key, trackedSeconds);
       }
       onClose();
-    }, 500);
+    }, 450);
   };
 
   const formatTime = (totalSeconds) => {
@@ -105,7 +105,7 @@ export function WorkoutTimer({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           onClick={onClose}
-          className="fixed inset-0 bg-dark-bg/90 backdrop-blur-md"
+          className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm"
         />
 
         {/* Modal Content */}
@@ -116,58 +116,58 @@ export function WorkoutTimer({
           transition={{ type: "spring", stiffness: 400, damping: 28 }}
           className="relative w-full max-w-sm z-10"
         >
-          <GlassCard glow={true} className="py-6 px-6 space-y-6 text-center overflow-hidden relative">
+          <GlassCard glow={true} className="py-6 px-6 space-y-5 text-center overflow-hidden relative shadow-2xl bg-white">
             {/* Top Close Button */}
             <button
               onClick={onClose}
-              className="absolute top-4 right-4 p-2 rounded-xl bg-dark-bg/80 text-gray-400 hover:text-white border border-white/5 shadow-neu-raised transition-colors"
+              className="absolute top-4 right-4 p-2 rounded-xl bg-slate-100 text-text-muted hover:text-text-primary border border-slate-200 transition-colors active:scale-95"
               aria-label="Close Timer"
             >
               <X className="w-4 h-4" />
             </button>
 
             {/* Exercise Details */}
-            <div className="space-y-2 pt-2">
-              <span className="text-[10px] font-mono font-bold px-3 py-1 rounded-full bg-accent-cyan/15 border border-accent-cyan/30 text-accent-cyan tracking-widest uppercase">
+            <div className="space-y-1.5 pt-1">
+              <span className="text-[10px] font-mono font-bold px-3 py-1 rounded-full bg-indigo-50 border border-indigo-200 text-primary tracking-widest uppercase">
                 COMBAT TIMER • {exercise.category || "SYSTEM"}
               </span>
 
-              <h2 className="text-2xl font-black text-white tracking-tight">
+              <h2 className="text-2xl font-black text-text-primary tracking-tight">
                 {exercise.name}
               </h2>
 
-              <div className="flex items-center justify-center gap-2 text-xs font-mono text-gray-300">
-                <Target className="w-3.5 h-3.5 text-accent-cyan" />
+              <div className="flex items-center justify-center gap-2 text-xs font-mono text-text-secondary">
+                <Target className="w-3.5 h-3.5 text-primary" />
                 <span>
                   Target: {exercise.target} {exercise.unit}
                 </span>
                 <span>•</span>
-                <span className="text-accent-cyan font-bold">
+                <span className="text-primary font-bold">
                   {exercise.badge || "+2.5 EXP"}
                 </span>
               </div>
             </div>
 
             {/* Large Digital Clock Display */}
-            <div className="relative py-6">
+            <div className="relative py-4">
               <div
                 className={`text-6xl font-black font-mono tracking-tight transition-all duration-300 ${
                   status === "running"
-                    ? "text-accent-cyan drop-shadow-[0_0_25px_rgba(79,172,254,0.6)]"
+                    ? "text-primary drop-shadow-[0_0_20px_rgba(99,102,241,0.35)]"
                     : status === "paused"
-                    ? "text-amber-400 drop-shadow-[0_0_15px_rgba(251,191,36,0.4)]"
-                    : "text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]"
+                    ? "text-amber-500"
+                    : "text-text-primary"
                 }`}
               >
                 {formatTime(seconds)}
               </div>
 
               {/* Status Indicator */}
-              <div className="flex items-center justify-center gap-1.5 mt-2 text-[11px] font-mono text-gray-400">
-                <Clock className="w-3 h-3" />
+              <div className="flex items-center justify-center gap-1.5 mt-2 text-[11px] font-mono text-text-muted">
+                <Clock className="w-3 h-3 text-primary" />
                 <span className="uppercase tracking-wider">
                   {status === "running"
-                    ? "⏱ Recording Active Pace"
+                    ? "⏱ Recording Active Cadence"
                     : status === "paused"
                     ? "⏸ Workout Paused"
                     : "Ready to Begin"}
@@ -176,20 +176,20 @@ export function WorkoutTimer({
             </div>
 
             {/* Timer Control Buttons */}
-            <div className="space-y-3 pt-2">
+            <div className="space-y-3 pt-1">
               {status === "idle" && (
                 <div className="flex flex-col gap-2.5">
                   <NeumorphicButton
                     onClick={startTimer}
-                    className="w-full justify-center text-white font-bold bg-gradient-to-r from-accent-cyan to-blue-600 shadow-glow-cyan text-sm py-4"
+                    className="w-full justify-center text-white font-bold bg-gradient-to-r from-primary to-secondary shadow-glow-primary text-sm py-4 border-none"
                   >
-                    <Play className="w-4 h-4 mr-2 fill-white" />
+                    <Play className="w-4 h-4 mr-2 fill-white text-white" />
                     Start Workout
                   </NeumorphicButton>
 
                   <button
                     onClick={handleComplete}
-                    className="text-xs font-mono text-gray-400 hover:text-accent-cyan transition-colors py-1"
+                    className="text-xs font-mono text-text-muted hover:text-primary transition-colors py-1"
                   >
                     Quick Complete (Bypass Timer)
                   </button>
@@ -201,16 +201,16 @@ export function WorkoutTimer({
                   <div className="grid grid-cols-2 gap-3">
                     <button
                       onClick={pauseTimer}
-                      className="py-3.5 px-4 rounded-xl bg-dark-bg/90 border border-amber-500/30 text-amber-400 font-bold text-xs font-mono shadow-neu-raised flex items-center justify-center gap-1.5 active:shadow-neu-pressed hover:border-amber-500/60 transition-all"
+                      className="py-3.5 px-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-700 font-bold text-xs font-mono flex items-center justify-center gap-1.5 active:scale-95 transition-all shadow-sm"
                     >
-                      <Pause className="w-4 h-4 fill-amber-400" />
+                      <Pause className="w-4 h-4 fill-amber-600 text-amber-600" />
                       Pause
                     </button>
 
                     <button
                       onClick={handleComplete}
                       disabled={isFinishing}
-                      className="py-3.5 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 text-white font-bold text-xs font-mono shadow-glow-cyan flex items-center justify-center gap-1.5 active:opacity-90 hover:opacity-95 transition-all"
+                      className="py-3.5 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 text-white font-bold text-xs font-mono shadow-md flex items-center justify-center gap-1.5 active:scale-95 transition-all"
                     >
                       <CheckCircle2 className="w-4 h-4" />
                       {isFinishing ? "Saving..." : "Complete"}
@@ -224,7 +224,7 @@ export function WorkoutTimer({
                   <div className="grid grid-cols-3 gap-2">
                     <button
                       onClick={resetTimer}
-                      className="py-3 px-2 rounded-xl bg-dark-bg/90 border border-white/10 text-gray-400 font-bold text-xs font-mono shadow-neu-raised flex items-center justify-center gap-1 active:shadow-neu-pressed hover:text-white"
+                      className="py-3 px-2 rounded-xl bg-slate-100 border border-slate-200 text-text-secondary font-bold text-xs font-mono flex items-center justify-center gap-1 active:scale-95 hover:text-text-primary"
                       title="Reset Timer"
                     >
                       <RotateCcw className="w-3.5 h-3.5" />
@@ -233,16 +233,16 @@ export function WorkoutTimer({
 
                     <button
                       onClick={resumeTimer}
-                      className="py-3 px-2 rounded-xl bg-dark-bg/90 border border-accent-cyan/40 text-accent-cyan font-bold text-xs font-mono shadow-neu-raised flex items-center justify-center gap-1 active:shadow-neu-pressed hover:border-accent-cyan"
+                      className="py-3 px-2 rounded-xl bg-indigo-50 border border-indigo-200 text-primary font-bold text-xs font-mono flex items-center justify-center gap-1 active:scale-95 hover:bg-indigo-100"
                     >
-                      <Play className="w-3.5 h-3.5 fill-accent-cyan" />
+                      <Play className="w-3.5 h-3.5 fill-primary text-primary" />
                       Resume
                     </button>
 
                     <button
                       onClick={handleComplete}
                       disabled={isFinishing}
-                      className="py-3 px-2 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 text-white font-bold text-xs font-mono shadow-glow-cyan flex items-center justify-center gap-1 active:opacity-90 hover:opacity-95"
+                      className="py-3 px-2 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 text-white font-bold text-xs font-mono shadow-sm flex items-center justify-center gap-1 active:scale-95"
                     >
                       <CheckCircle2 className="w-3.5 h-3.5" />
                       {isFinishing ? "Saving..." : "Done"}
