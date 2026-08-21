@@ -55,6 +55,25 @@ export async function POST() {
       );
     }
 
+    // --- CAPTURE DAILY PROGRESS FOR WORKOUT LOG BEFORE RESET ---
+    const completedExercises = {
+      pushups: !!user.dailyProgress?.pushups,
+      squats: !!user.dailyProgress?.squats,
+      crunches: !!user.dailyProgress?.crunches,
+      running: !!user.dailyProgress?.running,
+    };
+
+    // --- CALCULATE ACTUAL DURATION FROM TRACKED TIMER SECONDS ---
+    const totalDurationSeconds = Object.values(user.dailyDurations || {}).reduce(
+      (sum, s) => sum + (Number(s) || 0),
+      0
+    );
+
+    const actualDurationMinutes =
+      totalDurationSeconds > 0
+        ? Math.max(1, Math.round(totalDurationSeconds / 60))
+        : Math.max(10, completedCount * 5);
+
     // --- CALCULATE TIER & EXP ---
     const currentLevel = user.level || 0;
     const tier = getTier(currentLevel);
@@ -106,6 +125,31 @@ export async function POST() {
       crunches: false,
       running: false,
     };
+    user.dailyDurations = {
+      pushups: 0,
+      squats: 0,
+      crunches: 0,
+      running: 0,
+    };
+
+    // --- RECORD WORKOUT LOG ENTRY ---
+    if (!user.workoutLogs) {
+      user.workoutLogs = [];
+    }
+
+    user.workoutLogs.unshift({
+      date: today,
+      timestamp: new Date(),
+      exercises: completedExercises,
+      earnedExp: earnedExp,
+      levelAtTime: newLevel,
+      durationMinutes: actualDurationMinutes,
+    });
+
+    // Keep up to last 365 logs (1 year history cap)
+    if (user.workoutLogs.length > 365) {
+      user.workoutLogs = user.workoutLogs.slice(0, 365);
+    }
 
     await user.save();
 
@@ -119,6 +163,7 @@ export async function POST() {
         earnedExp,
         levelsGained,
         levelUp: levelsGained > 0,
+        actualDurationMinutes,
       },
       { status: 200 }
     );

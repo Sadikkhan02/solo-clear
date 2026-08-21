@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { signIn } from "next-auth/react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import GlassCard from "@/components/ui/GlassCard";
@@ -73,27 +72,12 @@ export default function RegisterPage() {
         return;
       }
 
-      setSuccess("Hunter awakened successfully! Initializing system...");
+      setSuccess("Hunter awakened successfully! Redirecting to verification...");
 
-      // Step 2: Auto-login with NextAuth
-      const loginResult = await signIn("credentials", {
-        email: normalizedEmail,
-        password,
-        redirect: false,
-      });
-
-      if (loginResult?.error) {
-        setError("Registration succeeded, but auto-login failed. Redirecting to login...");
-        setIsLoading(false);
-        setTimeout(() => {
-          router.push("/login");
-        }, 1500);
-        return;
-      }
-
-      // Step 3: Redirect to main quest dashboard
-      router.push("/");
-      router.refresh();
+      // Step 2: Redirect to verify-email notice screen
+      setTimeout(() => {
+        router.push(`/verify-email?email=${encodeURIComponent(normalizedEmail)}`);
+      }, 1000);
     } catch (err) {
       console.error("Registration error:", err);
       setError("An unexpected error occurred. Please try again.");
@@ -107,11 +91,11 @@ export default function RegisterPage() {
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: -20 }}
       transition={{ duration: 0.28, ease: "easeOut" }}
-      className="flex flex-col justify-center min-h-[85vh] py-8 space-y-6"
+      className="flex flex-col justify-center min-h-[85vh] py-8 space-y-6 select-none"
     >
       {/* Header */}
       <div className="text-center space-y-2">
-        <div className="inline-block px-4 py-1 mx-auto rounded-full bg-accent-cyan/10 border border-accent-cyan/30 text-accent-cyan text-xs font-mono tracking-widest">
+        <div className="inline-block px-4 py-1 mx-auto rounded-full bg-accent-cyan/10 border border-accent-cyan/30 text-accent-cyan text-xs font-mono tracking-widest uppercase">
           HUNTER AWAKENING
         </div>
         <h1 className="text-3xl font-bold text-white tracking-wide">Begin Your Hunt</h1>

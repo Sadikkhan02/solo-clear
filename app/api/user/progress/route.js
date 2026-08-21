@@ -9,6 +9,8 @@ export const dynamic = "force-dynamic";
 // Field Whitelist (strictly these fields can be modified via this generic endpoint)
 const ALLOWED_FIELDS = [
   "dailyProgress",
+  "dailyDurations",
+  "durations",
   "stats",
   "statPoints",
   "streak",
@@ -48,17 +50,26 @@ export async function PUT(request) {
 
     // --- SANITIZE WHITELISTED FIELDS ---
     const updateFields = {};
+    const allowedExercises = ["pushups", "squats", "crunches", "running"];
+
     for (const key of ALLOWED_FIELDS) {
       if (body[key] !== undefined) {
         if (key === "dailyProgress" && typeof body[key] === "object") {
-          const allowedExercises = ["pushups", "squats", "crunches", "running"];
           const sanitizedQuests = {};
           for (const ex of allowedExercises) {
             if (body[key][ex] !== undefined) {
               sanitizedQuests[ex] = Boolean(body[key][ex]);
             }
           }
-          updateFields[key] = sanitizedQuests;
+          updateFields.dailyProgress = sanitizedQuests;
+        } else if ((key === "dailyDurations" || key === "durations") && typeof body[key] === "object") {
+          const sanitizedDurations = {};
+          for (const ex of allowedExercises) {
+            if (body[key][ex] !== undefined) {
+              sanitizedDurations[ex] = Math.max(0, Number(body[key][ex]) || 0);
+            }
+          }
+          updateFields.dailyDurations = sanitizedDurations;
         } else if (key === "stats" && typeof body[key] === "object") {
           const allowedStats = ["str", "vit", "agi"];
           const sanitizedStats = {};

@@ -18,6 +18,7 @@ import {
   Lock,
   LogOut,
   RefreshCw,
+  BookOpen,
 } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { useAuth } from "@/context/AuthContext";
@@ -26,6 +27,7 @@ import { GlassCard } from "@/components/ui/GlassCard";
 import { NeumorphicButton } from "@/components/ui/NeumorphicButton";
 import { ExpBar } from "@/components/ui/ExpBar";
 import { LevelUpModal } from "@/components/ui/LevelUpModal";
+import { WorkoutTimer } from "@/components/ui/WorkoutTimer";
 
 export default function HomePage() {
   const router = useRouter();
@@ -46,21 +48,35 @@ export default function HomePage() {
   } = useHunterData();
 
   const [showLevelUp, setShowLevelUp] = useState(false);
-  const [levelUpData, setLevelUpData] = useState({
-    oldLevel: 0,
-    newLevel: 0,
-    statPointsEarned: 3,
-  });
+  const [levelUpData, setLevelUpData] = useState({ oldLevel: 0, newLevel: 0, statPointsEarned: 0 });
+  const [activeTimerQuest, setActiveTimerQuest] = useState(null);
   const [huntFeedback, setHuntFeedback] = useState(null);
   const [showDevTools, setShowDevTools] = useState(false);
   const [isClaiming, setIsClaiming] = useState(false);
 
-  // --- REDIRECT UNAUTHENTICATED USERS ---
+  // Auto-redirect unauthenticated users to /login
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
       router.push("/login");
     }
   }, [authLoading, isAuthenticated, router]);
+
+  // Handler for completing quest via WorkoutTimer
+  const handleCompleteTimerQuest = (exerciseKey, seconds) => {
+    const updatedDaily = {
+      ...(data?.dailyProgress || {}),
+      [exerciseKey]: true,
+    };
+    const updatedDurations = {
+      ...(data?.dailyDurations || {}),
+      [exerciseKey]: seconds,
+    };
+
+    updateHunterProgress({
+      dailyProgress: updatedDaily,
+      dailyDurations: updatedDurations,
+    });
+  };
 
   // --- LOADING STATE ---
   if (authLoading || (hunterLoading && !data?.email)) {
@@ -305,6 +321,14 @@ export default function HomePage() {
                 )}
               </Link>
 
+              <Link
+                href="/log"
+                className="p-2 rounded-xl bg-dark-bg/80 shadow-neu-raised hover:text-accent-cyan text-gray-300 border border-white/5 transition-all active:shadow-neu-pressed"
+                title="View Activity History & Workout Logs"
+              >
+                <BookOpen className="w-3.5 h-3.5 text-accent-cyan" />
+              </Link>
+
               {(data.streak || 0) > 0 && (
                 <div className="flex items-center space-x-1 px-2 py-1 rounded-xl bg-dark-bg/80 shadow-neu-pressed border border-white/5 text-[11px] font-mono text-amber-400">
                   <Flame className="w-3.5 h-3.5 fill-amber-400" />
@@ -371,7 +395,14 @@ export default function HomePage() {
                   badge={expLabel}
                   isCompleted={isCompleted}
                   disabled={data.huntClaimedToday}
-                  onClick={() => handleToggleQuest(exercise.key)}
+                  onClick={() => {
+                    if (data.huntClaimedToday) return;
+                    setActiveTimerQuest({
+                      ...exercise,
+                      badge: expLabel,
+                      isCompleted,
+                    });
+                  }}
                 />
               );
             })}
@@ -439,6 +470,16 @@ export default function HomePage() {
         oldLevel={levelUpData.oldLevel}
         newLevel={levelUpData.newLevel}
         statPointsEarned={levelUpData.statPointsEarned}
+      />
+
+      {/* FULL-SCREEN WORKOUT TIMER MODAL */}
+      <WorkoutTimer
+        isOpen={!!activeTimerQuest}
+        onClose={() => setActiveTimerQuest(null)}
+        exercise={activeTimerQuest}
+        isCompleted={!!data.dailyProgress?.[activeTimerQuest?.key]}
+        initialDuration={data.dailyDurations?.[activeTimerQuest?.key] || 0}
+        onComplete={handleCompleteTimerQuest}
       />
     </motion.div>
   );

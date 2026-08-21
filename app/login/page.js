@@ -7,7 +7,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import GlassCard from "@/components/ui/GlassCard";
 import NeumorphicButton from "@/components/ui/NeumorphicButton";
-import { Eye, EyeOff, Mail, Lock } from "lucide-react";
+import { Eye, EyeOff, Mail, Lock, KeyRound } from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -30,7 +30,11 @@ export default function LoginPage() {
       });
 
       if (result?.error) {
-        setError("Invalid hunter email or password.");
+        if (result.error.includes("verify your email")) {
+          setError("Please verify your hunter email before logging in. Check your inbox for the awakening link.");
+        } else {
+          setError("Invalid hunter email or password.");
+        }
         setIsLoading(false);
         return;
       }
@@ -51,11 +55,11 @@ export default function LoginPage() {
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: -20 }}
       transition={{ duration: 0.28, ease: "easeOut" }}
-      className="flex flex-col justify-center min-h-[85vh] py-8 space-y-6"
+      className="flex flex-col justify-center min-h-[85vh] py-8 space-y-6 select-none"
     >
       {/* Header */}
       <div className="text-center space-y-2">
-        <div className="inline-block px-4 py-1 mx-auto rounded-full bg-accent-cyan/10 border border-accent-cyan/30 text-accent-cyan text-xs font-mono tracking-widest">
+        <div className="inline-block px-4 py-1 mx-auto rounded-full bg-accent-cyan/10 border border-accent-cyan/30 text-accent-cyan text-xs font-mono tracking-widest uppercase">
           SYSTEM ACCESS
         </div>
         <h1 className="text-3xl font-bold text-white tracking-wide">Hunter Login</h1>
@@ -105,6 +109,16 @@ export default function LoginPage() {
             </button>
           </div>
         </GlassCard>
+
+        {/* Forgot Password Link */}
+        <div className="flex justify-end px-1">
+          <Link
+            href="/forgot-password"
+            className="text-xs text-gray-400 hover:text-accent-cyan font-mono transition-colors"
+          >
+            Forgot Password?
+          </Link>
+        </div>
 
         {/* Error Message Notice */}
         {error && (

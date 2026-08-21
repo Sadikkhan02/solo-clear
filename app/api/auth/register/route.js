@@ -1,6 +1,8 @@
+import crypto from "crypto";
 import { connectToDatabase } from "@/lib/mongodb";
 import User from "@/lib/models/User";
 import bcrypt from "bcryptjs";
+import { sendVerificationEmail } from "@/lib/email";
 import { NextResponse } from "next/server";
 
 export async function POST(request) {
@@ -47,6 +49,10 @@ export async function POST(request) {
     // --- PASSWORD HASHING ---
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    // --- GENERATE VERIFICATION TOKEN (24h expiry) ---
+    const verificationToken = crypto.randomBytes(32).toString("hex");
+    const verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
     // --- CREATE HUNTER ---
     const newHunter = await User.create({
       email: normalizedEmail,
@@ -64,14 +70,25 @@ export async function POST(request) {
         crunches: false,
         running: false,
       },
+      emailVerified: false,
+      verificationToken,
+      verificationExpires,
     });
+
+    // --- SEND VERIFICATION EMAIL ---
+    try {
+      await sendVerificationEmail(normalizedEmail, verificationToken);
+    } catch (emailErr) {
+      console.error("Warning: Could not send verification email:", emailErr);
+      // Non-blocking for registration completion
+    }
 
     // --- SANITIZE RESPONSE (Exclude password) ---
     const { password: _, ...sanitizedHunter } = newHunter.toObject();
 
     return NextResponse.json(
       {
-        message: "Hunter awakened successfully!",
+        message: "Hunter awakened successfully! Verification email dispatched.",
         hunter: sanitizedHunter,
       },
       { status: 201 }
