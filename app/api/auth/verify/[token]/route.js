@@ -32,8 +32,9 @@ export async function GET(request, { params }) {
       );
     }
 
-    // Mark verified and clear verification tokens
+    // Mark verified, clear pending flag, and clear verification tokens
     user.emailVerified = true;
+    user.isPending = false;  // Allow /register/complete to find this user
     user.verificationToken = undefined;
     user.verificationExpires = undefined;
 

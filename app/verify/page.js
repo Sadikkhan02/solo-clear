@@ -15,6 +15,7 @@ function VerifyContent() {
 
   const [status, setStatus] = useState("verifying"); // 'verifying' | 'success' | 'error'
   const [message, setMessage] = useState("");
+  const [verifiedEmail, setVerifiedEmail] = useState("");
   const [countdown, setCountdown] = useState(3);
 
   useEffect(() => {
@@ -33,6 +34,8 @@ function VerifyContent() {
           setStatus("error");
           setMessage(data.error || "Invalid or expired verification link.");
         } else {
+          // Capture email so we can pass it to the complete page
+          setVerifiedEmail(data.email || "");
           setStatus("success");
           setMessage(data.message || "Hunter email verified successfully!");
         }
@@ -50,7 +53,8 @@ function VerifyContent() {
     if (status !== "success") return;
 
     if (countdown <= 0) {
-      router.push("/login");
+      // Redirect to password setup step with email pre-filled
+      router.push(`/register/complete?email=${encodeURIComponent(verifiedEmail)}`);
       return;
     }
 
@@ -59,7 +63,7 @@ function VerifyContent() {
     }, 1000);
 
     return () => clearTimeout(timer);
-  }, [status, countdown, router]);
+  }, [status, countdown, router, verifiedEmail]);
 
   return (
     <motion.div
@@ -98,16 +102,18 @@ function VerifyContent() {
           </p>
 
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-dark-bg/80 border border-white/5 text-xs font-mono text-gray-300">
-            <span>Redirecting to System Access in</span>
+            <span>Setting up your profile in</span>
             <span className="text-accent-cyan font-bold text-sm">{countdown}s</span>
           </div>
 
           <div className="pt-2">
             <NeumorphicButton
-              onClick={() => router.push("/login")}
+              onClick={() =>
+                router.push(`/register/complete?email=${encodeURIComponent(verifiedEmail)}`)
+              }
               className="w-full justify-center text-white font-bold bg-gradient-to-r from-accent-cyan to-blue-700 shadow-glow-cyan"
             >
-              <span>Go to Login Now</span>
+              <span>Set Your Password Now</span>
               <ArrowRight className="w-4 h-4 ml-1.5" />
             </NeumorphicButton>
           </div>

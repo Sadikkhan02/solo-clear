@@ -24,10 +24,11 @@ async function verifyToken(token) {
     };
   }
 
-  // Mark email as verified and clear tokens
-  user.emailVerified = true;
-  user.verificationToken = undefined;
-  user.verificationExpires = undefined;
+    // Mark email as verified, clear pending flag, and clear tokens
+    user.emailVerified = true;
+    user.isPending = false;  // Allow /register/complete to find this user
+    user.verificationToken = undefined;
+    user.verificationExpires = undefined;
 
   await user.save();
 
