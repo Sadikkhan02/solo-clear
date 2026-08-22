@@ -9,9 +9,10 @@
     "lint": "next lint",
     "test-db": "node scripts/test-db.js",
     "test-auth": "node scripts/test-auth.js",
+    "test-profile": "node scripts/test-profile.js",
     "test-middleware": "node scripts/test-middleware.js",
     "test-email": "node scripts/test-email-flow.js",
-    "test:all": "npm run test-db && npm run test-auth && npm run test-middleware && npm run test-email"
+    "test:all": "npm run test-db && npm run test-auth && npm run test-profile && npm run test-middleware && npm run test-email"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",

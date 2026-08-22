@@ -21,6 +21,7 @@ import {
   BookOpen,
   BarChart3,
   Trophy,
+  User,
 } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { useAuth } from "@/context/AuthContext";
@@ -353,6 +354,14 @@ export default function HomePage() {
                 title="View System Rewards & Milestones"
               >
                 <Trophy className="w-3.5 h-3.5 text-amber-500" />
+              </Link>
+
+              <Link
+                href="/profile"
+                className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-text-primary border border-slate-200 transition-all active:scale-95"
+                title="Edit Hunter Profile & Metrics"
+              >
+                <User className="w-3.5 h-3.5 text-primary" />
               </Link>
 
               {(data.streak || 0) > 0 && (

@@ -13,6 +13,7 @@ import {
   ChevronLeft,
   RefreshCw,
   Shield,
+  UserCog,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useHunterData } from "@/hooks/useHunterData";
@@ -124,7 +125,7 @@ export default function StatusPage() {
       transition={{ duration: 0.28, ease: "easeOut" }}
       className="w-full flex-1 flex flex-col justify-between select-none space-y-4 py-1 pb-6"
     >
-      {/* Top Header: Back navigation & Available Points */}
+      {/* Top Header: Back navigation, Profile & Available Points */}
       <header className="flex items-center justify-between pb-2 border-b border-slate-200/80">
         <Link
           href="/"
@@ -132,6 +133,15 @@ export default function StatusPage() {
         >
           <ChevronLeft className="w-4 h-4" />
           <span>Quest Log</span>
+        </Link>
+
+        {/* Edit Profile Link */}
+        <Link
+          href="/profile"
+          className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-white shadow-sm text-text-secondary hover:text-primary border border-slate-200 text-xs font-mono transition-colors active:scale-95"
+        >
+          <UserCog className="w-3.5 h-3.5 text-primary" />
+          <span>Profile</span>
         </Link>
 
         {/* Available Points Badge */}
