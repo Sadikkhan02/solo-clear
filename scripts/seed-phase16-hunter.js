@@ -19,11 +19,14 @@ async function seed() {
   console.log("Connected to Mongo");
 
   const email = "monarch_test@solo.clear";
-  await User.deleteOne({ email });
+  const username = "monarch_test";
+  await User.deleteMany({ $or: [{ email }, { username }] });
 
   const hashedPassword = await bcrypt.hash("Hunter123", 10);
   const user = await User.create({
     email,
+    username,
+    profile: { displayName: "Shadow Monarch" },
     password: hashedPassword,
     level: 0,
     exp: 0,

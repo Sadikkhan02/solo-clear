@@ -58,6 +58,7 @@ export default function HomePage() {
   const [huntFeedback, setHuntFeedback] = useState(null);
   const [showDevTools, setShowDevTools] = useState(false);
   const [isClaiming, setIsClaiming] = useState(false);
+  const [globalRank, setGlobalRank] = useState(null);
   const initialBriefingShownRef = useRef(false);
 
   // Auto-redirect unauthenticated users to /login
@@ -66,6 +67,28 @@ export default function HomePage() {
       router.push("/login");
     }
   }, [authLoading, isAuthenticated, router]);
+
+  // Fetch current user global rank
+  useEffect(() => {
+    async function fetchRank() {
+      if (!isAuthenticated) return;
+      try {
+        const res = await fetch("/api/ranking?page=1&limit=1");
+        if (res.ok) {
+          const payload = await res.json();
+          if (payload.currentUserRank) {
+            setGlobalRank(payload.currentUserRank);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to fetch user rank:", err);
+      }
+    }
+
+    if (!authLoading && isAuthenticated) {
+      fetchRank();
+    }
+  }, [authLoading, isAuthenticated, data?.level, data?.exp]);
 
   // First Load Daily Briefing Notification
   useEffect(() => {
@@ -289,96 +312,64 @@ export default function HomePage() {
 
       {/* Main 4-Card Vertical Stack */}
       <div className="flex flex-col gap-3.5">
-        {/* CARD 1: PROFILE & RANK */}
-        <GlassCard glow={true} className="py-4 px-4">
+        {/* CARD 1: STREAMLINED HEADER */}
+        <GlassCard glow={true} className="py-3.5 px-4">
           <div className="flex items-center justify-between">
-            {/* Left: Rank & Level */}
-            <div className="space-y-1">
-              <div className="flex items-center space-x-2">
-                <span
-                  className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-md border uppercase tracking-wider ${tier?.badgeClass || "bg-slate-100 text-slate-700 border-slate-200"}`}
-                >
-                  {tier?.rankLetter || "E"}-Rank
-                </span>
-                <span className="text-xs text-text-secondary font-medium tracking-wide">
-                  {tier?.title || "Novice Awakened"}
-                </span>
+            {/* Left: Global Rank, Tier, Level & Streak */}
+            <div className="flex items-center flex-wrap gap-2">
+              {/* Global Rank Badge */}
+              <Link
+                href="/ranking"
+                className="px-2.5 py-1 rounded-xl bg-indigo-50 border border-indigo-200 text-xs font-mono font-bold text-primary shadow-sm hover:bg-indigo-100 transition-colors flex items-center gap-1"
+                title="View Global Leaderboard"
+              >
+                <Trophy className="w-3 h-3 text-indigo-500" />
+                <span>{globalRank ? `#${globalRank} Global` : "Ranked"}</span>
+              </Link>
+
+              {/* Tier Rank Badge */}
+              <span
+                className={`text-[10px] font-mono font-bold px-2 py-1 rounded-xl border uppercase tracking-wider ${
+                  tier?.badgeClass || "bg-slate-100 text-slate-700 border-slate-200"
+                }`}
+              >
+                {tier?.rankLetter || "E"}-Rank
+              </span>
+
+              {/* Level Badge */}
+              <div className="px-2.5 py-1 rounded-xl bg-white border border-slate-200 text-xs font-mono font-bold text-text-primary shadow-sm">
+                LVL {data.level || 0}
               </div>
-              <h1 className="text-2xl font-black text-text-primary tracking-tight flex items-center gap-1.5">
-                Level {data.level || 0}
-                <Sparkles className="w-4 h-4 text-primary" />
-              </h1>
-            </div>
 
-            {/* Right: Tools & Level Indicator */}
-            <div className="flex items-center space-x-1.5">
-              <button
-                onClick={() => setShowDevTools(!showDevTools)}
-                className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-text-muted border border-slate-200 transition-all active:scale-95"
-                title="System Tools & Logout"
-                aria-label="Toggle Simulator"
-              >
-                <Clock className="w-3.5 h-3.5" />
-              </button>
-
-              <Link
-                href="/status"
-                className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-text-primary border border-slate-200 transition-all active:scale-95 relative"
-                title="View Hunter Status & Stats"
-              >
-                <Sliders className="w-3.5 h-3.5 text-primary" />
-                {(data.statPoints || 0) > 0 && (
-                  <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-primary animate-pulse" />
-                )}
-              </Link>
-
-              <Link
-                href="/log"
-                className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-text-primary border border-slate-200 transition-all active:scale-95"
-                title="View Activity History & Workout Logs"
-              >
-                <BookOpen className="w-3.5 h-3.5 text-primary" />
-              </Link>
-
-              <Link
-                href="/analytics"
-                className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-text-primary border border-slate-200 transition-all active:scale-95"
-                title="View Visual Analytics & Progress Charts"
-              >
-                <BarChart3 className="w-3.5 h-3.5 text-primary" />
-              </Link>
-
-              <Link
-                href="/rewards"
-                className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-text-primary border border-slate-200 transition-all active:scale-95"
-                title="View System Rewards & Milestones"
-              >
-                <Trophy className="w-3.5 h-3.5 text-amber-500" />
-              </Link>
-
-              <Link
-                href="/profile"
-                className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-text-primary border border-slate-200 transition-all active:scale-95"
-                title="Edit Hunter Profile & Metrics"
-              >
-                <User className="w-3.5 h-3.5 text-primary" />
-              </Link>
-
+              {/* Streak Badge */}
               {(data.streak || 0) > 0 && (
-                <div className="flex items-center space-x-1 px-2 py-1 rounded-xl bg-amber-50 border border-amber-200 text-[11px] font-mono text-amber-700 font-bold">
+                <div className="flex items-center space-x-1 px-2.5 py-1 rounded-xl bg-amber-50 border border-amber-200 text-xs font-mono text-amber-700 font-bold shadow-sm">
                   <Flame className="w-3.5 h-3.5 fill-amber-500 text-amber-500" />
                   <span>{data.streak}d</span>
                 </div>
               )}
+            </div>
 
-              <div className="w-12 h-12 rounded-2xl bg-indigo-50 border border-indigo-200 flex flex-col items-center justify-center text-center shadow-sm">
-                <span className="text-[8px] font-mono uppercase text-text-muted font-bold tracking-wider">
-                  LVL
-                </span>
-                <span className="text-base font-mono font-black text-primary leading-none">
-                  {data.level || 0}
-                </span>
-              </div>
+            {/* Right: Profile Hub & Sign Out Buttons */}
+            <div className="flex items-center space-x-2">
+              <Link
+                href="/profile"
+                className="p-2.5 rounded-2xl bg-white border border-slate-200 text-primary shadow-sm hover:border-primary hover:bg-indigo-50/50 transition-all active:scale-95 flex items-center gap-1.5"
+                title="Open Hunter Profile Hub"
+                aria-label="Hunter Profile Hub"
+              >
+                <User className="w-4 h-4" />
+                <span className="text-xs font-mono font-bold hidden sm:inline">Profile</span>
+              </Link>
+
+              <button
+                onClick={() => signOut({ callbackUrl: "/login" })}
+                className="p-2.5 rounded-2xl bg-white border border-slate-200 text-rose-600 shadow-sm hover:border-rose-300 hover:bg-rose-50 transition-all active:scale-95"
+                title="Sign Out"
+                aria-label="Sign Out"
+              >
+                <LogOut className="w-4 h-4" />
+              </button>
             </div>
           </div>
         </GlassCard>

@@ -17,6 +17,7 @@ import {
   ArrowLeft,
   Sword,
   XCircle,
+  AtSign,
 } from "lucide-react";
 
 // --- Step Dots ---
@@ -69,6 +70,7 @@ function CompleteContent() {
   const router = useRouter();
   const email = searchParams.get("email") || "";
 
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -76,10 +78,12 @@ function CompleteContent() {
   const [status, setStatus] = useState("idle"); // idle | submitting | success | error
   const [error, setError] = useState("");
 
+  const trimmedUsername = username.trim().toLowerCase();
+  const isUsernameValid = /^[a-zA-Z0-9_]{3,20}$/.test(trimmedUsername);
   const strength = getStrength(password);
   const isPasswordValid = password.length >= 6;
   const doPasswordsMatch = password === confirmPassword && confirmPassword.length > 0;
-  const canSubmit = isPasswordValid && doPasswordsMatch && status !== "submitting";
+  const canSubmit = isUsernameValid && isPasswordValid && doPasswordsMatch && status !== "submitting";
 
   // --- Guard: no email in query ---
   if (!email) {
@@ -118,11 +122,15 @@ function CompleteContent() {
     setStatus("submitting");
 
     try {
-      // Step 1: Set password
+      // Step 1: Set username & password
       const completeRes = await fetch("/api/auth/register/complete", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({
+          email,
+          password,
+          username: trimmedUsername,
+        }),
       });
       const completeData = await completeRes.json();
 
@@ -167,10 +175,10 @@ function CompleteContent() {
           FINAL STEP
         </div>
         <h1 className="text-3xl font-black text-text-primary tracking-tight">
-          Create Your Password
+          Awaken Your Hunter
         </h1>
         <p className="text-text-secondary text-sm">
-          Step 3 of 3 — Secure your hunter account
+          Step 3 of 3 — Choose your handle and secure your account
         </p>
       </div>
 
@@ -183,6 +191,42 @@ function CompleteContent() {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Hunter Username Input */}
+        <div className="space-y-1">
+          <div className="rounded-2xl border border-slate-200/90 bg-white shadow-sm overflow-hidden flex items-center px-4">
+            <AtSign className="w-5 h-5 text-slate-400 flex-shrink-0 mr-3" />
+            <input
+              type="text"
+              id="complete-username"
+              placeholder="Hunter Username (e.g. shadow_monarch)"
+              value={username}
+              maxLength={20}
+              onChange={(e) => {
+                setUsername(e.target.value.toLowerCase().replace(/[^a-zA-Z0-9_]/g, ""));
+                if (status === "error") { setError(""); setStatus("idle"); }
+              }}
+              className="w-full py-4 bg-transparent text-text-primary placeholder-slate-400 outline-none min-h-[56px] text-sm font-mono"
+              required
+              autoComplete="username"
+              autoFocus
+            />
+            {username.length > 0 && (
+              <span className="flex-shrink-0">
+                {isUsernameValid ? (
+                  <Check className="w-4 h-4 text-emerald-500" />
+                ) : (
+                  <X className="w-4 h-4 text-rose-500" />
+                )}
+              </span>
+            )}
+          </div>
+          {username.length > 0 && !isUsernameValid && (
+            <p className="text-[11px] font-mono text-rose-500 px-2">
+              3-20 characters using letters, numbers, and underscores only.
+            </p>
+          )}
+        </div>
+
         {/* Password Input */}
         <div className="rounded-2xl border border-slate-200/90 bg-white shadow-sm overflow-hidden flex items-center px-4">
           <Lock className="w-5 h-5 text-slate-400 flex-shrink-0 mr-3" />
@@ -198,7 +242,6 @@ function CompleteContent() {
             className="w-full py-4 bg-transparent text-text-primary placeholder-slate-400 outline-none min-h-[56px] text-sm"
             required
             autoComplete="new-password"
-            autoFocus
           />
           <button
             type="button"
@@ -261,11 +304,15 @@ function CompleteContent() {
         </div>
 
         {/* Live Validation Checks */}
-        {(password.length > 0 || confirmPassword.length > 0) && (
+        {(username.length > 0 || password.length > 0 || confirmPassword.length > 0) && (
           <div className="px-1 space-y-1 text-xs font-mono">
+            <div className={`flex items-center gap-2 transition-colors ${isUsernameValid ? "text-emerald-600" : "text-text-muted"}`}>
+              {isUsernameValid ? <Check className="w-3.5 h-3.5" /> : <X className="w-3.5 h-3.5" />}
+              <span>Unique username (3-20 chars)</span>
+            </div>
             <div className={`flex items-center gap-2 transition-colors ${isPasswordValid ? "text-emerald-600" : "text-text-muted"}`}>
               {isPasswordValid ? <Check className="w-3.5 h-3.5" /> : <X className="w-3.5 h-3.5" />}
-              <span>At least 6 characters</span>
+              <span>Password at least 6 characters</span>
             </div>
             {confirmPassword.length > 0 && (
               <div className={`flex items-center gap-2 transition-colors ${doPasswordsMatch ? "text-emerald-600" : "text-rose-500"}`}>

@@ -2,11 +2,12 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { connectToDatabase } from "@/lib/mongodb";
 import User from "@/lib/models/User";
+import { getTierBadge } from "@/lib/helpers";
 import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
 
-// GET: Fetch authenticated hunter profile with graceful defaults
+// GET: Fetch authenticated hunter profile with top-level username and metrics
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);
@@ -35,7 +36,6 @@ export async function GET() {
     const rawProfile = user.profile || {};
 
     const profile = {
-      username: rawProfile.username ?? null,
       displayName: rawProfile.displayName ?? null,
       age: rawProfile.age ?? null,
       weight: rawProfile.weight ?? null,
@@ -46,9 +46,18 @@ export async function GET() {
       customGoal: rawProfile.customGoal ?? null,
     };
 
+    const tier = getTierBadge(user.level || 0);
+
     return NextResponse.json(
       {
         email: user.email,
+        username: user.username || user.profile?.username || null,
+        level: user.level || 0,
+        exp: user.exp || 0,
+        streak: user.streak || 0,
+        statPoints: user.statPoints || 0,
+        stats: user.stats || {},
+        tier,
         profile,
       },
       { status: 200 }
@@ -62,7 +71,7 @@ export async function GET() {
   }
 }
 
-// PUT: Update hunter profile with validation and uniqueness checks
+// PUT: Update hunter profile and username with validation and uniqueness checks
 export async function PUT(request) {
   try {
     const session = await getServerSession(authOptions);
@@ -112,26 +121,18 @@ export async function PUT(request) {
 
     // 1. Username Validation & Uniqueness
     if (username !== undefined) {
-      const trimmedUsername = typeof username === "string" ? username.trim() : null;
+      const trimmedUsername = typeof username === "string" ? username.trim().toLowerCase() : null;
       if (trimmedUsername && trimmedUsername.length > 0) {
-        if (trimmedUsername.length < 3 || trimmedUsername.length > 20) {
+        if (!/^[a-zA-Z0-9_]{3,20}$/.test(trimmedUsername)) {
           return NextResponse.json(
-            { error: "Username must be between 3 and 20 characters" },
-            { status: 400 }
-          );
-        }
-        if (!/^[a-zA-Z0-9_]+$/.test(trimmedUsername)) {
-          return NextResponse.json(
-            { error: "Username can only contain letters, numbers, and underscores" },
+            { error: "Username must be 3-20 characters using letters, numbers, and underscores only" },
             { status: 400 }
           );
         }
 
         // Check uniqueness across other users (case-insensitive)
         const existingWithUsername = await User.findOne({
-          "profile.username": {
-            $regex: new RegExp(`^${trimmedUsername.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`, "i"),
-          },
+          username: trimmedUsername,
           _id: { $ne: user._id },
         });
 
@@ -142,9 +143,7 @@ export async function PUT(request) {
           );
         }
 
-        updatedProfile.username = trimmedUsername;
-      } else {
-        updatedProfile.username = null;
+        user.username = trimmedUsername;
       }
     }
 
@@ -260,6 +259,7 @@ export async function PUT(request) {
     return NextResponse.json(
       {
         message: "Hunter profile updated successfully",
+        username: user.username,
         profile: updatedProfile,
       },
       { status: 200 }

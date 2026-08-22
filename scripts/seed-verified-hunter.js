@@ -1,4 +1,10 @@
 import dotenv from "dotenv";
+import dns from "dns";
+
+try {
+  dns.setServers(["8.8.8.8", "1.1.1.1"]);
+} catch (e) {}
+
 dotenv.config({ path: ".env.local" });
 
 import mongoose from "mongoose";
@@ -13,11 +19,16 @@ async function seed() {
   console.log("Connected to Mongo");
 
   const email = "monarch_test@solo.clear";
-  await User.deleteOne({ email });
+  const username = "monarch_test";
+  await User.deleteMany({ $or: [{ email }, { username }] });
 
   const hashedPassword = await bcrypt.hash("Hunter123", 10);
   const user = await User.create({
     email,
+    username,
+    profile: {
+      displayName: "Shadow Monarch",
+    },
     password: hashedPassword,
     level: 0,
     exp: 8, // 8 / 10 EXP so completing hunt will level up!

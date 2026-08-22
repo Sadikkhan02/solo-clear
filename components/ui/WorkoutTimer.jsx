@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { NeumorphicButton } from "@/components/ui/NeumorphicButton";
+import { CameraCapture } from "@/components/ui/CameraCapture";
 import {
   Play,
   Pause,
@@ -14,6 +15,7 @@ import {
   Zap,
   Clock,
   Target,
+  Camera,
 } from "lucide-react";
 
 export function WorkoutTimer({
@@ -27,6 +29,8 @@ export function WorkoutTimer({
   const [seconds, setSeconds] = useState(initialDuration || 0);
   const [status, setStatus] = useState("idle"); // 'idle' | 'running' | 'paused'
   const [isFinishing, setIsFinishing] = useState(false);
+  const [showCamera, setShowCamera] = useState(false);
+  const [photoTaken, setPhotoTaken] = useState(false);
   const intervalRef = useRef(null);
 
   // Sync initial duration if provided
@@ -35,6 +39,8 @@ export function WorkoutTimer({
       setSeconds(initialDuration || 0);
       setStatus("idle");
       setIsFinishing(false);
+      setShowCamera(false);
+      setPhotoTaken(false);
     }
   }, [isOpen, initialDuration]);
 
@@ -74,18 +80,28 @@ export function WorkoutTimer({
     setSeconds(0);
   };
 
-  const handleComplete = () => {
+  const finalizeCompletion = (photoData = null) => {
     if (intervalRef.current) clearInterval(intervalRef.current);
     setIsFinishing(true);
+    setShowCamera(false);
 
     const trackedSeconds = Math.max(1, seconds);
 
     setTimeout(() => {
       if (onComplete && exercise?.key) {
-        onComplete(exercise.key, trackedSeconds);
+        onComplete(exercise.key, trackedSeconds, photoData);
       }
       onClose();
-    }, 450);
+    }, 350);
+  };
+
+  const handleComplete = () => {
+    if (intervalRef.current) clearInterval(intervalRef.current);
+    if (!photoTaken) {
+      setShowCamera(true);
+    } else {
+      finalizeCompletion();
+    }
   };
 
   const formatTime = (totalSeconds) => {
@@ -254,6 +270,24 @@ export function WorkoutTimer({
           </GlassCard>
         </motion.div>
       </div>
+
+      {/* Camera Capture Proof Verification Modal */}
+      {showCamera && (
+        <CameraCapture
+          isOpen={showCamera}
+          exerciseName={exercise.name}
+          onCapture={(photoData) => {
+            setPhotoTaken(true);
+            finalizeCompletion(photoData);
+          }}
+          onSkip={() => {
+            finalizeCompletion();
+          }}
+          onClose={() => {
+            setShowCamera(false);
+          }}
+        />
+      )}
     </AnimatePresence>
   );
 }
